@@ -21,6 +21,12 @@ type Status struct {
 	CurrentTime   int    `json:"currentTime"`
 }
 
+type ClientInfo struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 type Message struct {
 	Type          string              `json:"type"`
 	Text          string              `json:"text,omitempty"`
@@ -28,7 +34,7 @@ type Message struct {
 	VideoDetails  *utube.VideoDetails `json:"videoDetails,omitempty"`
 	Seconds       int                 `json:"seconds,omitempty"`
 	Status        *Status             `json:"status,omitempty"`
-	ClientList    []string            `json:"clientList,omitempty"`
+	ClientList    []ClientInfo        `json:"clientList,omitempty"`
 	SourceClient  string              `json:"sourceClient,omitempty"`
 	ClientID      string              `json:"clientId,omitempty"`
 	Date          int                 `json:"date"`
@@ -41,113 +47,10 @@ func NewClient(clientID string, ws *websocket.Conn) *Client {
 	}
 }
 
-func (c *Client) join(msg Message) {
-	fmt.Printf("Client %v joined as '%v'\n", msg.ClientID, msg.Text)
-	for _, client := range clients {
-		if client.clientID == msg.ClientID {
-			client.name = msg.Text
-		}
-	}
-
-	notificationMsg := Message{
-		Type: "clientJoined",
-		Text: msg.Text,
-	}
-
-	c.sendMessageToAllClientsExcept(notificationMsg, msg.ClientID)
-	c.setClientList()
-}
-
-func (c *Client) leftRoom(clientID string) {
-	fmt.Printf("Client %v left\n", clientID)
-	var clientName string
-
-	for _, client := range clients {
-		if client.clientID == clientID {
-			clientName = client.name
-			break
-		}
-	}
-
-	notificationMsg := Message{
-		Type: "clientLeft",
-		Text: clientName,
-	}
-
-	c.sendMessageToAllClientsExcept(notificationMsg, clientID)
-}
-
-func (c *Client) setClientList() {
-	var clientList []string
-
-	for _, client := range clients {
-		clientList = append(clientList, client.name)
-	}
-
-	msg := Message{
-		Type:       "clientList",
-		ClientList: clientList,
-	}
-
-	c.sendMessageToAllClients(msg)
-}
-
-func (c *Client) setPlaybackState(msg Message) {
-	c.sendMessageToAllClientsExcept(msg, msg.ClientID)
-}
-
-func (c *Client) requestVideo(msg Message) {
-	details, err := utube.GetVideoDetails(msg.Text)
-	if err != nil {
-		fmt.Println("Error:", err)
-		c.sendMessageToClient(Message{
-			Type: "error",
-			Text: err.Error(),
-		})
-		return
-	}
-	lastVideoDetails = details
-
-	resetLastStatuses()
-
-	c.sendMessageToAllClients(Message{
-		Type:         "setVideoDetails",
-		VideoDetails: &details,
-	})
-}
-
-func (c *Client) sendMessageToAllClients(msg Message) {
-	for range clients {
-		c.sendMessageToClient(msg)
-	}
-}
-
-func (c *Client) sendMessageToAllClientsExcept(msg Message, clientID string) {
-	for _, client := range clients {
-		if client.clientID == clientID {
-			continue
-		}
-
-		c.sendMessageToClient(msg)
-	}
-}
-
-func (c *Client) sendMessageToClient(msg Message) {
-	msg.ClientID = "server"
-	msg.ClientID = "TODO"
-
-	err := c.ws.WriteJSON(msg)
-	if err != nil {
-		log.Println(err)
-		c.ws.Close()
-		delete(clients, c.clientID)
-	}
-}
-
 func (c *Client) welcomeClient() {
-	if len(lastVideoDetails.URL) == 0 {
-		return
-	}
+	//if len(lastVideoDetails.URL) == 0 {
+	//	return
+	//}
 
 	var currentTimes []int
 	otherClientsArePlaying := false
@@ -174,11 +77,71 @@ func (c *Client) welcomeClient() {
 		playbackState = "playing"
 	}
 
-	c.sendMessageToClient(Message{
+	c.join(Message{
 		Type:          "setVideoDetails",
 		VideoDetails:  &lastVideoDetails,
 		Seconds:       maxCurrentTime,
 		PlaybackState: playbackState,
 		ClientID:      "server",
+	})
+}
+
+func (c *Client) join(msg Message) {
+	log.Printf("Client %v joined as '%v'\n", msg.ClientID, msg.Text)
+	for _, client := range clients {
+		if client.clientID == msg.ClientID {
+			client.name = msg.Text
+		}
+	}
+
+	notificationMsg := Message{
+		Type: "clientJoined",
+		Text: msg.Text,
+	}
+
+	sendMessageToAllClientsExcept(notificationMsg, c)
+	setClientList()
+}
+
+func (c *Client) leftRoom() {
+	fmt.Printf("Client %v left\n", c.clientID)
+	var clientName string
+
+	for _, client := range clients {
+		if client.clientID == c.clientID {
+			clientName = client.name
+			break
+		}
+	}
+
+	notificationMsg := Message{
+		Type: "clientLeft",
+		Text: clientName,
+	}
+
+	sendMessageToAllClientsExcept(notificationMsg, c)
+}
+
+func (c *Client) setPlaybackState(msg Message) {
+	sendMessageToAllClientsExcept(msg, c)
+}
+
+func (c *Client) requestVideo(msg Message) {
+	details, err := utube.GetVideoDetails(msg.Text)
+	if err != nil {
+		fmt.Println("Error:", err)
+		sendMessageToClient(Message{
+			Type: "error",
+			Text: err.Error(),
+		}, c)
+		return
+	}
+	lastVideoDetails = details
+
+	resetLastStatuses()
+
+	sendMessageToAllClients(Message{
+		Type:         "setVideoDetails",
+		VideoDetails: &details,
 	})
 }

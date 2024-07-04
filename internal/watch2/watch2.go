@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var clients = make(map[string]*Client)
 var lastVideoDetails utube.VideoDetails
 var upgrader = websocket.Upgrader{}
 var broadcast = make(chan Message)
@@ -22,23 +21,23 @@ func HandleMessages() {
 
 		func() {
 			switch msg.Type {
-			case "join":
-				join(msg)
-
-			case "setPlaybackState":
-				setPlaybackState(msg)
-
-			case "requestVideo":
-				requestVideo(msg)
-
-			case "jumpToTime":
-				jumpToTime(msg)
-
-			case "reportStatus":
-				handleReportStatus(msg)
-
-			case "chatMessage":
-				chatMessage(msg)
+			//case "join":
+			//	join(msg)
+			//
+			//case "setPlaybackState":
+			//	setPlaybackState(msg)
+			//
+			//case "requestVideo":
+			//	requestVideo(msg)
+			//
+			//case "jumpToTime":
+			//	jumpToTime(msg)
+			//
+			//case "reportStatus":
+			//	handleReportStatus(msg)
+			//
+			//case "chatMessage":
+			//	chatMessage(msg)
 
 			default:
 				fmt.Printf("Error: Unknown message type '%v'\n", msg.Type)
@@ -47,16 +46,10 @@ func HandleMessages() {
 	}
 }
 
-func resetLastStatuses() {
-	for _, client := range clients {
-		client.lastStatus = Status{}
-	}
-}
-
 func HandleWS(w http.ResponseWriter, r *http.Request) {
 	clientIDs, ok := r.URL.Query()["clientId"]
 	if !ok || len(clientIDs) == 0 {
-		fmt.Println("Parameter 'clientId' not present in websocket url")
+		log.Printf("Parameter 'clientId' not present in websocket url")
 		w.WriteHeader(400)
 		return
 	}
@@ -71,7 +64,7 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	log.Printf("Client %v successfully connected", clientID)
+	log.Printf("ClienClientt %v successfully connected", clientID)
 	client := NewClient(clientID, ws)
 	clients[clientID] = client
 
@@ -81,10 +74,10 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		msgString, err := utils.ParseWebsocketJSON(ws, &msg)
 		if err != nil {
-			client.leftRoom(client.clientID)
+			client.leftRoom()
 			log.Println(err)
 			delete(clients, clientID)
-			client.setClientList()
+			setClientList()
 			break
 		}
 
