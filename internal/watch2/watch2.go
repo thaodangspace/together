@@ -2,12 +2,12 @@ package watch2
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
+	"log/slog"
 	"net/http"
 	"watch2/internal/utils"
 	"watch2/utube"
-
-	"github.com/gorilla/websocket"
 )
 
 var lastVideoDetails utube.VideoDetails
@@ -49,7 +49,7 @@ func HandleMessages() {
 func HandleWS(w http.ResponseWriter, r *http.Request) {
 	clientIDs, ok := r.URL.Query()["clientId"]
 	if !ok || len(clientIDs) == 0 {
-		log.Printf("Parameter 'clientId' not present in websocket url")
+		slog.Info("Parameter 'clientId' not present in websocket url")
 		w.WriteHeader(400)
 		return
 	}
@@ -64,7 +64,7 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	log.Printf("ClienClientt %v successfully connected", clientID)
+	slog.Info("Client %v successfully connected", clientID)
 	client := NewClient(clientID, ws)
 	clients[clientID] = client
 

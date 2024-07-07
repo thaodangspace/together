@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -24,7 +25,7 @@ func main() {
 
 	http.HandleFunc("/ws", wsHandler)
 
-	log.Println("Server running on http://localhost:8080")
+	slog.Info("Server running on http://localhost:8080")
 	log.Fatalln(http.ListenAndServe(":8080", nil))
 }
 
