@@ -1,34 +1,33 @@
 package main
 
 import (
-	"log"
-	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"watch2/internal/watch2"
+
+	"github.com/go-kit/log"
 )
 
 func main() {
-	go watch2.HandleMessages()
+	var logger log.Logger
+	{
+		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+	}
+	// Initialize the composite structure
+	messageHandler := watch2.NewMessageHandler(logger)
+
+	// Start handling messages
+	// go messageHandler.HandleMessages()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fs := http.Dir("./static")
-		fsh := http.FileServer(fs)
-		_, err := fs.Open(path.Clean(r.URL.Path))
-		if os.IsNotExist(err) {
-			r.URL.Path = "/"
-		}
-
-		fsh.ServeHTTP(w, r)
+		// Handle root requests
 	})
 
-	http.HandleFunc("/ws", wsHandler)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		// Handle WebSocket requests
+		messageHandler.HandleWebSocket(w, r)
+	})
 
-	slog.Info("Server running on http://localhost:8080")
-	log.Fatalln(http.ListenAndServe(":8080", nil))
-}
-
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	watch2.HandleWS(w, r)
+	http.ListenAndServe(":8080", nil)
 }
