@@ -1,33 +1,65 @@
 package main
 
 import (
+	"flag"
 	"net/http"
-	"os"
-	"watch2/internal/watch2"
+	"watch2/internal"
 
-	"github.com/go-kit/log"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/rest"
+)
+
+var (
+	port    = flag.Int("port", 3333, "the port to listen")
+	timeout = flag.Int64("timeout", 0, "timeout of milliseconds")
+	cpu     = flag.Int64("cpu", 500, "cpu threshold")
 )
 
 func main() {
-	var logger log.Logger
-	{
-		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-	}
-	// Initialize the composite structure
-	messageHandler := watch2.NewMessageHandler(logger)
+	flag.Parse()
 
-	// Start handling messages
-	// go messageHandler.HandleMessages()
+	logx.Disable()
+	engine := rest.MustNewServer(rest.RestConf{
+		ServiceConf: service.ServiceConf{
+			Log: logx.LogConf{
+				Mode: "console",
+			},
+		},
+		Host:         "localhost",
+		Port:         *port,
+		Timeout:      *timeout,
+		CpuThreshold: *cpu,
+	})
+	defer engine.Stop()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Handle root requests
+	hub := internal.NewHub()
+	go hub.Run()
+
+	engine.AddRoute(rest.Route{
+		Method: http.MethodGet,
+		Path:   "/",
+		Handler: func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				http.Error(w, "Not found", http.StatusNotFound)
+				return
+			}
+			if r.Method != "GET" {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+
+			http.ServeFile(w, r, "home.html")
+		},
 	})
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		// Handle WebSocket requests
-		messageHandler.HandleWebSocket(w, r)
+	engine.AddRoute(rest.Route{
+		Method: http.MethodGet,
+		Path:   "/ws",
+		Handler: func(w http.ResponseWriter, r *http.Request) {
+			internal.ServeWs(hub, w, r)
+		},
 	})
 
-	http.ListenAndServe(":8080", nil)
+	engine.Start()
 }
