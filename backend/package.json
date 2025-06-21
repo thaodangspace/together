@@ -1,0 +1,12 @@
+{
+  "name": "syncwatch-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@trpc/server": "^11.4.2",
+    "express": "^4.19.2",
+    "zod": "^3.22.4"
+  }
+}
