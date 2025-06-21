@@ -49,18 +49,15 @@ Kiến trúc hệ thống sẽ bao gồm ba thành phần chính:
 
 ```mermaid
 graph TD
-    A[Người dùng] -->|Truy cập| B(Frontend - React.js)
+    A[Người dùng] -->|Truy cập| B(Frontend - Astro)
     B -->|HTTP/S API Requests| C(Backend - Deno.js)
-    B -->|WebSocket Connection| C
+    B -->|Long-Polling Requests| C
     C -->|YouTube Data API| D[YouTube]
     C -->|Database| E[Cơ sở dữ liệu]
     E -->|Lưu trữ dữ liệu| C
 ```
 
-**Giải thích:**
-
-*   **Frontend:** Sẽ chịu trách nhiệm hiển thị giao diện người dùng, gửi yêu cầu tRPC đến backend để thực hiện các thao tác như tạo/tham gia phòng, thêm video vào hàng đợi. Đồng thời, nó sẽ duy trì Long-Polling requests với backend để nhận các cập nhật trạng thái phát video và tin nhắn chat theo thời gian thực.
-*   **Backend:** Sẽ là trung tâm xử lý mọi logic. Nó sẽ quản lý các phòng, người dùng trong phòng, hàng đợi video. Khi có yêu cầu thay đổi trạng thái phát video từ một người dùng, backend sẽ nhận yêu cầu đó qua tRPC, xử lý và sau đó thông báo cho tất cả các Long-Polling requests đang chờ trong cùng phòng. Backend cũng sẽ tương tác với YouTube Data API để lấy thông tin video (tiêu đề, thumbnail, thời lượng) dựa trên URL.
+**Giải *   **Frontend (Astro):** Sẽ chịu trách nhiệm hiển thị giao diện người dùng, nơi người dùng tương tác với ứng dụng. Astro sẽ giúp tối ưu hóa hiệu suất bằng cách chỉ gửi JavaScript cần thiết cho các thành phần tương tác, trong khi phần lớn trang được render dưới dạng HTML tĩnh. Frontend sẽ gửi yêu cầu tRPC đến backend để thực hiện các thao tác như tạo/tham gia phòng, thêm video vào hàng đợi. Đồng thời, nó sẽ duy trì Long-Polling requests với backend để nhận các cập nhật trạng thái phát video và tin nhắn chat theo thời gian thực.*   **Backend:** Sẽ là trung tâm xử lý mọi logic. Nó sẽ quản lý các phòng, người dùng trong phòng, hàng đợi video. Khi có yêu cầu thay đổi trạng thái phát video từ một người dùng, backend sẽ nhận yêu cầu đó qua tRPC, xử lý và sau đó thông báo cho tất cả các Long-Polling requests đang chờ trong cùng phòng. Backend cũng sẽ tương tác với YouTube Data API để lấy thông tin video (tiêu đề, thumbnail, thời lượng) dựa trên URL.
 *   **Real-time Communication (tRPC với Long-Polling):** Đây là thành phần quan trọng để đảm bảo trải nghiệm đồng bộ hóa. Thay vì sử dụng WebSocket, Long-Polling cho phép backend đẩy dữ liệu đến frontend khi có sự kiện xảy ra (ví dụ: video play/pause, tin nhắn chat mới) mà vẫn sử dụng HTTP requests thông thường, đơn giản hóa việc triển khai và debugging.
 *   **Database:** Lưu trữ thông tin về phòng, người dùng, hàng đợi video, lịch sử chat (tùy chọn).
 *   **YouTube Data API:** Được sử dụng để xác thực URL YouTube, lấy thông tin chi tiết về video (tiêu đề, thời lượng, thumbnail) để hiển thị trong hàng đợi và giao diện người dùng.
@@ -422,7 +419,7 @@ router.get('/api/rooms/:roomId/poll', async (ctx) => {
 });
 ```
 
-**Frontend (React.js) - Long-Polling Hook Example:**
+**Frontend (Astro/React Component) - Long-Polling Hook Example:**
 ```typescript
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
@@ -535,55 +532,80 @@ export const appRouter = t.router({
 export type AppRouter = typeof appRouter;
 ```
 
-**Frontend (React.js) - tRPC Client Example:**
+**Frontend (Astro/React Component) - tRPC Client Example:**
 ```typescript
 import { createTRPCReact } from '@trpc/react-query';
 import type { AppRouter } from '../../backend/src/router'; // Adjust path
 
 export const trpc = createTRPCReact<AppRouter>();
 
-// Usage in a React component
-const { mutate: createRoom } = trpc.room.create.useMutation();
-const { data: videoState } = trpc.room.getVideoState.useQuery({ roomId: 'some-room-id' });
+// Usage in a React component rendered by Astro
+const MyComponent = () => {
+  const { mutate: createRoom } = trpc.room.create.useMutation();
+  const { data: videoState } = trpc.room.getVideoState.useQuery({ roomId: 'some-room-id' });
 
-// Example of calling a mutation
-createRoom({
-  name: 'My New Room',
-  username: 'JohnDoe'
-}, {
-  onSuccess: (data) => {
-    console.log('Room created:', data);
-  },
-  onError: (error) => {
-    console.error('Error creating room:', error);
-  },
-});
+  // Example of calling a mutation
+  const handleCreateRoom = () => {
+    createRoom({
+      name: 'My New Room',
+      username: 'JohnDoe'
+    }, {
+      onSuccess: (data) => {
+        console.log('Room created:', data);
+      },
+      onError: (error) => {
+        console.error('Error creating room:', error);
+      },
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleCreateRoom}>Create Room</button>
+      {videoState && <p>Current video state: {videoState.isPlaying ? 'Playing' : 'Paused'}</p>}
+    </div>
+  );
+};
+
+export default MyComponent;
 ```
 
-**Frontend (React.js) - tRPC Provider Setup:**
+**Frontend (Astro/React Component) - tRPC Provider Setup:**
 ```typescript
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { trpc } from './utils/trpc';
 
+// This setup would typically be done in a React component that Astro renders
+// For Astro, you might pass the client down via props or context to React components
+
 const queryClient = new QueryClient();
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: 'http://localhost:8000/trpc',
+      url: import.meta.env.PUBLIC_API_URL + '/trpc',
     }),
   ],
 });
 
-const App = () => {
+interface TRPCProviderProps {
+  children: React.ReactNode;
+}
+
+export const TRPCProvider: React.FC<TRPCProviderProps> = ({ children }) => {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        {/* Your React components here */}
+        {children}
       </QueryClientProvider>
     </trpc.Provider>
   );
 };
+
+// In an Astro component, you would import and use TRPCProvider like this:
+// <TRPCProvider client:load>
+//   <MyReactComponent />
+// </TRPCProvider>
 ```
 
 
@@ -1064,13 +1086,15 @@ const QueuePanel = ({ queue, currentVideo, onAddVideo, onRemoveVideo, onReorderQ
 - **UUID:** Tạo unique identifiers
 - **Zod:** Schema validation và type inference
 
-#### 4.1.2. Frontend (React.js)
+#### 4.1.2. Frontend (Astro)
 ```json
 {
   "dependencies": {
+    "@astrojs/react": "^3.0.0",
+    "@astrojs/tailwind": "^5.0.0",
+    "astro": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0",
     "@trpc/client": "^10.45.0",
     "@trpc/react-query": "^10.45.0",
     "@tanstack/react-query": "^4.35.0",
@@ -1086,14 +1110,16 @@ const QueuePanel = ({ queue, currentVideo, onAddVideo, onRemoveVideo, onReorderQ
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.3",
-    "vite": "^4.4.5",
     "typescript": "^5.0.2"
   }
 }
 ```
 
 **Core Dependencies:**
-- **React Router:** Client-side routing
+- **Astro:** Framework cho building content-focused websites
+- **@astrojs/react:** Tích hợp React components vào Astro
+- **@astrojs/tailwind:** Tích hợp Tailwind CSS vào Astro
+- **React:** UI library cho interactive components
 - **tRPC Client:** Type-safe API client với React Query integration
 - **React Query:** Data fetching và caching
 - **Axios:** HTTP client cho Long-Polling requests
@@ -1153,41 +1179,47 @@ syncwatch-backend/
 ```
 
 #### 4.2.2. Frontend Structure (React.js)
+`#### 4.2.2. Frontend Structure (Astro)
 ```
 syncwatch-frontend/
 ├── public/
-│   ├── index.html
-│   └── favicon.ico
+│   ├── favicon.ico
+│   └── robots.txt
 ├── src/
 │   ├── components/
-│   │   ├── common/
-│   │   │   ├── Button.tsx
-│   │   │   ├── Input.tsx
-│   │   │   ├── Modal.tsx
-│   │   │   └── Loading.tsx
-│   │   ├── layout/
-│   │   │   ├── Header.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   └── Layout.tsx
-│   │   ├── video/
-│   │   │   ├── VideoPlayer.tsx
-│   │   │   ├── VideoControls.tsx
-│   │   │   └── VideoInfo.tsx
-│   │   ├── chat/
-│   │   │   ├── ChatPanel.tsx
-│   │   │   ├── MessageList.tsx
-│   │   │   ├── MessageInput.tsx
-│   │   │   └── UserList.tsx
-│   │   └── queue/
-│   │       ├── QueuePanel.tsx
-│   │       ├── QueueItem.tsx
-│   │       ├── AddVideoForm.tsx
-│   │       └── CurrentVideo.tsx
+│   │   ├── react/
+│   │   │   ├── common/
+│   │   │   │   ├── Button.tsx
+│   │   │   │   ├── Input.tsx
+│   │   │   │   ├── Modal.tsx
+│   │   │   │   └── Loading.tsx
+│   │   │   ├── video/
+│   │   │   │   ├── VideoPlayer.tsx
+│   │   │   │   ├── VideoControls.tsx
+│   │   │   │   └── VideoInfo.tsx
+│   │   │   ├── chat/
+│   │   │   │   ├── ChatPanel.tsx
+│   │   │   │   ├── MessageList.tsx
+│   │   │   │   ├── MessageInput.tsx
+│   │   │   │   └── UserList.tsx
+│   │   │   └── queue/
+│   │   │       ├── QueuePanel.tsx
+│   │   │       ├── QueueItem.tsx
+│   │   │       ├── AddVideoForm.tsx
+│   │   │       └── CurrentVideo.tsx
+│   │   └── astro/
+│   │       ├── layout/
+│   │       │   ├── BaseLayout.astro
+│   │       │   ├── Header.astro
+│   │       │   └── Footer.astro
+│   │       └── HomePageSections.astro
+│   ├── layouts/
+│   │   └── MainLayout.astro
 │   ├── pages/
-│   │   ├── HomePage.tsx
-│   │   ├── RoomPage.tsx
-│   │   ├── CreateRoomPage.tsx
-│   │   └── JoinRoomPage.tsx
+│   │   ├── index.astro
+│   │   ├── room/[id].astro
+│   │   ├── create.astro
+│   │   └── join.astro
 │   ├── hooks/
 │   │   ├── useTRPC.ts
 │   │   ├── useLongPolling.ts
@@ -1207,19 +1239,14 @@ syncwatch-frontend/
 │   │   ├── constants.ts
 │   │   ├── helpers.ts
 │   │   └── validation.ts
-│   ├── types/
-│   │   ├── api.ts
-│   │   ├── room.ts
-│   │   └── user.ts
 │   ├── styles/
-│   │   ├── globals.css
-│   │   └── components.css
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── vite-env.d.ts
+│   │   └── global.css
+│   └── env.d.ts
+├── astro.config.mjs
 ├── package.json
-├── vite.config.ts
 ├── tailwind.config.js
+└── tsconfig.json
+```config.js
 └── tsconfig.json
 ```
 
@@ -1234,11 +1261,11 @@ syncwatch-frontend/
 - [ ] Implement CORS và basic middleware
 
 **Frontend Tasks:**
-- [ ] Setup React project với Vite
+- [ ] Setup Astro project với `@astrojs/react` và `@astrojs/tailwind`
 - [ ] Configure Tailwind CSS và component library
-- [ ] Create basic routing với React Router
+- [ ] Create basic routing với Astro pages
 - [ ] Implement landing page và basic layouts
-- [ ] Setup state management với Zustand
+- [ ] Setup state management với Zustand (trong React components)
 
 **Deliverables:**
 - Basic server running on Deno.js
@@ -1256,7 +1283,7 @@ syncwatch-frontend/
 **Frontend Tasks:**
 - [ ] Create room creation/joining forms
 - [ ] Implement room page layout
-- [ ] Add WebSocket connection management
+- [ ] Add Long-Polling connection management
 - [ ] Create user list component
 
 **Deliverables:**
@@ -2048,20 +2075,27 @@ export class DatabaseManager {
       )
     `);
     
-    console.log('✅ Database tables initialized');
-  }
-}
-```
+    console.log('✅ Database tables initialized'### 5.3. Frontend Setup và Configuration
 
-### 5.3. Frontend Setup và Configuration
+#### 5.3.1. Astro Project Initialization
 
-#### 5.3.1. React Project Initialization
-
-Sử dụng Vite để tạo React project với TypeScript:
+Sử dụng `create-astro` để tạo Astro project với React và Tailwind CSS:
 
 ```bash
-npm create vite@latest syncwatch-frontend -- --template react-ts
+npm create astro@latest syncwatch-frontend
 cd syncwatch-frontend
+
+# Chọn "Just the basics (recommended)"
+# Chọn "Yes" để cài đặt dependencies
+# Chọn "Yes" để tạo một dự án trống
+# Chọn "Yes" để cài đặt TypeScript
+
+# Add React integration
+npx astro add react
+
+# Add Tailwind CSS integration
+npx astro add tailwind
+
 npm install
 ```
 
@@ -2071,12 +2105,12 @@ Install required dependencies cho frontend:
 
 ```bash
 # Core dependencies
-npm install react-router-dom socket.io-client axios react-youtube
+npm install @trpc/client @trpc/react-query @tanstack/react-query axios react-youtube
 npm install react-beautiful-dnd react-hot-toast zustand
 
-# UI và styling
-npm install tailwindcss @tailwindcss/forms @tailwindcss/typography
-npm install lucide-react @headlessui/react
+# UI và styling (đã được cài đặt qua astro add tailwind)
+# npm install tailwindcss @tailwindcss/forms @tailwindcss/typography
+# npm install lucide-react @headlessui/react
 
 # Development dependencies
 npm install -D @types/react-beautiful-dnd
@@ -2086,20 +2120,15 @@ npm install -D vitest @vitejs/plugin-react
 
 #### 5.3.3. Tailwind CSS Configuration
 
-Setup Tailwind CSS cho styling:
+Setup Tailwind CSS cho styling (đã được `astro add tailwind` tạo ra):
 
-```bash
-npx tailwindcss init -p
-```
-
-Update `tailwind.config.js`:
+Update `tailwind.config.mjs` (hoặc `tailwind.config.js`):
 
 ```javascript
-/** @type {import('tailwindcss').Config} */
+/** @type {import("tailwindcss").Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{astro,html,js,jsx,md,mdx,ts,tsx}",
   ],
   theme: {
     extend: {
@@ -2128,58 +2157,51 @@ export default {
 }
 ```
 
-#### 5.3.4. Vite Configuration
+#### 5.3.4. Astro Configuration
 
-Update `vite.config.ts` để configure development server:
+Update `astro.config.mjs` để configure development server và proxy:
 
-```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+```javascript
+import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
+import tailwind from '@astrojs/tailwind';
 
+// https://astro.build/config
 export default defineConfig({
-  plugins: [react()],
+  integrations: [react(), tailwind()],
   server: {
     port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
-      '/ws': {
-        target: 'ws://localhost:8000',
-        ws: true,
-      }
-    }
+      '/trpc': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/trpc/, '/trpc'),
+      },
+    },
   },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-  }
-})
+  vite: {
+    optimizeDeps: {
+      exclude: ['@trpc/client', '@trpc/react-query', '@tanstack/react-query'],
+    },
+  },
+});
 ```
 
 #### 5.3.5. TypeScript Configuration
 
-Update `tsconfig.json` để improve development experience:
+Update `tsconfig.json` để improve development experience (Astro sẽ tạo file này):
 
 ```json
 {
+  "extends": "astro/tsconfig/base",
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
+    "jsxImportSource": "react",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
@@ -2189,14 +2211,14 @@ Update `tsconfig.json` để improve development experience:
       "@/store/*": ["./src/store/*"],
       "@/types/*": ["./src/types/*"],
       "@/utils/*": ["./src/utils/*"]
-    }
-  },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+    },
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  }
 }
-```
-
-### 5.4. Development Workflow
+```kflow
 
 #### 5.4.1. Git Workflow và Branch Strategy
 
@@ -2301,14 +2323,16 @@ Setup ESLint và Prettier cho code consistency:
 ```json
 {
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "astro dev",
+    "start": "astro start",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint src --ext ts,tsx --fix",
-    "format": "prettier --write src/**/*.{ts,tsx,css,md}"
+    "lint": "eslint src --ext ts,tsx,astro --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint src --ext ts,tsx,astro --fix",
+    "format": "prettier --write src/**/*.{ts,tsx,astro,css,md}"
   }
 }
 ```
@@ -2349,9 +2373,9 @@ deno task test
 deno task test:watch  # Watch mode
 ```
 
-#### 5.5.2. Frontend Testing với Vitest
+#### 5.5.2. Frontend Testing với Vitest (trong Astro Project)
 
-Setup Vitest configuration trong `vitest.config.ts`:
+Setup Vitest configuration trong `vitest.config.ts` (Astro project cũng sử dụng Vite):
 
 ```typescript
 import { defineConfig } from 'vitest/config';
@@ -2372,20 +2396,17 @@ export default defineConfig({
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock WebSocket
-global.WebSocket = vi.fn();
-
 // Mock YouTube API
 global.YT = {
   Player: vi.fn(),
 };
 ```
 
-**Component test example:**
+**Component test example (React component trong Astro):**
 ```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Button } from '../components/common/Button';
+import { Button } from '../src/components/react/common/Button'; // Adjusted path
 
 describe('Button Component', () => {
   it('renders with correct text', () => {
@@ -2755,7 +2776,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 COPY . .
 RUN npm run build
@@ -2878,7 +2899,7 @@ vercel --prod
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "outputDirectory": "dist"
       }
     }
   ],
@@ -2888,13 +2909,16 @@ vercel --prod
       "dest": "https://syncwatch-backend.deno.dev/api/$1"
     },
     {
+      "src": "/trpc/(.*)",
+      "dest": "https://syncwatch-backend.deno.dev/trpc/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
   "env": {
-    "VITE_API_URL": "https://syncwatch-backend.deno.dev",
-    "VITE_WS_URL": "wss://syncwatch-backend.deno.dev"
+    "PUBLIC_API_URL": "https://syncwatch-backend.deno.dev"
   }
 }
 ```
@@ -3635,7 +3659,7 @@ components:
 
 ### 6.1. Tóm tắt Dự án
 
-**SyncWatch** là một webapp hiện đại cho phép nhiều người dùng xem video YouTube và nghe nhạc cùng nhau trong thời gian thực. Ứng dụng được thiết kế với kiến trúc microservices sử dụng Deno.js cho backend và React.js cho frontend, đảm bảo hiệu suất cao, khả năng mở rộng và trải nghiệm người dùng mượt mà.
+**SyncWatch** là một webapp hiện đại cho phép nhiều người dùng xem video YouTube và nghe nhạc cùng nhau trong thời gian thực. Ứng dụng được thiết kế với kiến trúc microservices sử dụng Deno.js cho backend và Astro cho frontend, đảm bảo hiệu suất cao, khả năng mở rộng và trải nghiệm người dùng mượt mà.
 
 **Tính năng chính:**
 - **Đồng bộ hóa video real-time:** Tất cả người dùng trong cùng phòng xem video với trạng thái phát đồng bộ
@@ -3646,7 +3670,7 @@ components:
 
 **Công nghệ sử dụng:**
 - **Backend:** Deno.js với Oak framework, WebSockets, SQLite/PostgreSQL
-- **Frontend:** React.js với TypeScript, Tailwind CSS, Socket.IO
+- **Frontend:** Astro với TypeScript, React components, Tailwind CSS
 - **Deployment:** Docker containers, cloud-native architecture
 - **Integration:** YouTube Data API v3
 

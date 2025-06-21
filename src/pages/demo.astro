@@ -1,0 +1,199 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Deno + Astro Demo">
+  <main class="min-h-screen py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+          <span class="text-blue-600">Deno</span> + Astro Demo
+        </h1>
+        <p class="text-xl text-gray-600">
+          Following the official Deno-Astro template structure
+        </p>
+      </div>
+
+      <!-- Current Resources (Client-Side) -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          Current Resources (Client-Side Loaded)
+        </h2>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div id="current-resources">
+            <p class="text-gray-500">Loading resources...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Resource Form -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          Add New Resource
+        </h2>
+        
+        <form id="resource-form" class="space-y-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+              Name
+            </label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name"
+              placeholder="Resource name"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+          
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea 
+              id="description" 
+              name="description"
+              placeholder="Resource description"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            ></textarea>
+          </div>
+          
+          <button 
+            type="submit" 
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            Add Resource
+          </button>
+        </form>
+      </div>
+
+      <!-- API Test Section -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+          API Test Results
+        </h2>
+        <div id="results" class="bg-gray-50 rounded-lg p-4 min-h-[100px]">
+          <p class="text-gray-500">Results will appear here...</p>
+        </div>
+        
+        <div class="mt-4 space-x-4">
+          <button 
+            id="fetch-btn"
+            class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+          >
+            Fetch Resources
+          </button>
+          <button 
+            id="clear-btn"
+            class="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+          >
+            Clear Results
+          </button>
+        </div>
+      </div>
+
+      <!-- Features Overview -->
+      <div class="mt-12">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">
+          Deno + Astro Features Demonstrated
+        </h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Server-Side Rendering</h3>
+            <p class="text-gray-600 text-sm">Resources fetched at build time using Astro SSR</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">API Routes</h3>
+            <p class="text-gray-600 text-sm">Full REST API with GET, POST, DELETE operations</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Web Standards</h3>
+            <p class="text-gray-600 text-sm">Using modern Web APIs like crypto.randomUUID()</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">TypeScript</h3>
+            <p class="text-gray-600 text-sm">Full TypeScript support with Astro types</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Tailwind CSS</h3>
+            <p class="text-gray-600 text-sm">Integrated styling with Tailwind CSS</p>
+          </div>
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Client-Side JS</h3>
+            <p class="text-gray-600 text-sm">Interactive features with vanilla JavaScript</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('resource-form') as HTMLFormElement;
+    const results = document.getElementById('results') as HTMLElement;
+    const fetchBtn = document.getElementById('fetch-btn') as HTMLButtonElement;
+    const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
+    const currentResources = document.getElementById('current-resources') as HTMLElement;
+
+    // Load resources on page load
+    async function loadCurrentResources() {
+      try {
+        const response = await fetch('/api/resources.json');
+        const data = await response.json();
+        currentResources.innerHTML = `<pre class="text-sm overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>`;
+      } catch (error) {
+        currentResources.innerHTML = `<p class="text-red-600">Error loading resources: ${error.message}</p>`;
+      }
+    }
+
+    // Load resources when page loads
+    document.addEventListener('DOMContentLoaded', loadCurrentResources);
+
+    // Add resource form handler
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+      };
+
+      try {
+        const response = await fetch('/api/resources.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+        results.innerHTML = `<pre class="text-sm overflow-x-auto">${JSON.stringify(result, null, 2)}</pre>`;
+        
+        if (response.ok) {
+          form.reset();
+        }
+      } catch (error) {
+        results.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
+      }
+    });
+
+    // Fetch resources button
+    fetchBtn?.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/resources.json');
+        const data = await response.json();
+        results.innerHTML = `<pre class="text-sm overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>`;
+      } catch (error) {
+        results.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
+      }
+    });
+
+    // Clear results button
+    clearBtn?.addEventListener('click', () => {
+      results.innerHTML = '<p class="text-gray-500">Results will appear here...</p>';
+    });
+  </script>
+</Layout> 
