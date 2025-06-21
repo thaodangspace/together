@@ -1,6 +1,5 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { v4 as uuid } from 'std/uuid';
 import { Context } from './context.ts';
 import { longPollManager } from '../longpoll/manager.ts';
 import { YouTubeService } from '../services/YouTubeService.ts';
@@ -18,7 +17,7 @@ export const trpcRouter = t.router({
                     username: z.string().min(1).max(50),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 const roomId = crypto.randomUUID();
                 const userId = crypto.randomUUID();
 
@@ -75,7 +74,7 @@ export const trpcRouter = t.router({
                     username: z.string().min(1).max(50),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 const userId = crypto.randomUUID();
 
                 try {
@@ -138,7 +137,7 @@ export const trpcRouter = t.router({
                     userId: z.string().uuid(),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 try {
                     const user = ctx.db.query(
                         'SELECT username FROM users WHERE id = ? AND room_id = ?',
@@ -184,7 +183,7 @@ export const trpcRouter = t.router({
                     roomId: z.string().uuid(),
                 })
             )
-            .query(async ({ input, ctx }) => {
+            .query(({ input, ctx }) => {
                 try {
                     const roomInfo = this.getRoomInfo(ctx.db, input.roomId);
                     return { success: true, data: roomInfo };
@@ -209,7 +208,7 @@ export const trpcRouter = t.router({
                     position: z.number().min(0),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 try {
                     // Update room state
                     ctx.db.execute(
@@ -257,7 +256,7 @@ export const trpcRouter = t.router({
                     userId: z.string().uuid(),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 try {
                     // Get next video from queue
                     const nextVideo = ctx.db.query(
@@ -436,7 +435,7 @@ export const trpcRouter = t.router({
                     queueId: z.number(),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 try {
                     // Get queue item
                     const queueItem = ctx.db.query(
@@ -500,7 +499,7 @@ export const trpcRouter = t.router({
                     ),
                 })
             )
-            .mutation(async ({ input, ctx }) => {
+            .mutation(({ input, ctx }) => {
                 try {
                     // Update positions for all items
                     for (const item of input.queueItems) {
@@ -538,7 +537,7 @@ export const trpcRouter = t.router({
                     roomId: z.string().uuid(),
                 })
             )
-            .query(async ({ input, ctx }) => {
+            .query(({ input, ctx }) => {
                 try {
                     const queue = ctx.db.query(
                         `SELECT q.*, u.username as added_by_username 
@@ -615,7 +614,7 @@ export const trpcRouter = t.router({
                     ) {
                         // Auto-add video to queue
                         try {
-                            const videoInfo = await YouTubeService.getVideoInfoFromUrl(
+                            const _videoInfo = await YouTubeService.getVideoInfoFromUrl(
                                 input.content
                             );
                             // Add video logic here (similar to queue.add)
@@ -652,7 +651,7 @@ export const trpcRouter = t.router({
                     offset: z.number().min(0).default(0),
                 })
             )
-            .query(async ({ input, ctx }) => {
+            .query(({ input, ctx }) => {
                 try {
                     const messages = ctx.db.query(
                         `SELECT id, user_id, username, content, message_type, created_at
@@ -675,7 +674,7 @@ export const trpcRouter = t.router({
     }),
 
     // Helper methods
-    getRoomInfo: (db: any, roomId: string) => {
+    getRoomInfo: (db: unknown, roomId: string) => {
         const room = db.query('SELECT * FROM rooms WHERE id = ?', [roomId])[0];
         if (!room) throw new Error('Room not found');
 
@@ -713,7 +712,7 @@ export const trpcRouter = t.router({
         };
     },
 
-    startNextVideo: async (db: any, roomId: string, userId: string) => {
+    startNextVideo: (db: unknown, roomId: string, userId: string) => {
         const nextVideo = db.query(
             'SELECT * FROM queue WHERE room_id = ? ORDER BY position ASC LIMIT 1',
             [roomId]

@@ -6,25 +6,26 @@ interface PendingRequest {
     roomId: string;
     userId: string;
     timestamp: number;
-    resolve: (value?: any) => void;
+    timeoutId?: ReturnType<typeof setTimeout>;
+    resolve: () => void;
 }
 
 interface RoomEvent {
     type: string;
-    data: any;
+    data: unknown;
     timestamp: number;
 }
 
 export class LongPollManager {
     private pendingRequests = new Map<string, PendingRequest[]>();
     private readonly TIMEOUT = 25000; // 25 seconds
-    private cleanupInterval?: number;
+    private cleanupInterval?: ReturnType<typeof setInterval>;
 
     constructor() {
         this.startCleanup();
     }
 
-    async handleLongPoll(ctx: Context, roomId: string, userId: string): Promise<void> {
+    handleLongPoll(ctx: Context, roomId: string, userId: string): Promise<void> {
         return new Promise((resolve) => {
             const request: PendingRequest = {
                 context: ctx,
@@ -51,7 +52,7 @@ export class LongPollManager {
             }, this.TIMEOUT);
 
             // Store timeout ID for cleanup
-            (request as any).timeoutId = timeoutId;
+            request.timeoutId = timeoutId;
         });
     }
 
@@ -63,13 +64,15 @@ export class LongPollManager {
         // Send event to all pending requests in this room
         pending.forEach((request) => {
             try {
-                clearTimeout((request as any).timeoutId);
+                if (request.timeoutId) {
+                    clearTimeout(request.timeoutId);
+                }
                 request.context.response.status = 200;
                 request.context.response.body = event;
                 request.context.response.headers.set('Content-Type', 'application/json');
                 request.resolve();
             } catch (error) {
-                logger.error('Error sending long-poll response', error, {
+                logger.error('Error sending long-poll response', error as Error, {
                     roomId,
                     userId: request.userId,
                 });
@@ -105,7 +108,9 @@ export class LongPollManager {
                 const validRequests = requests.filter((req) => {
                     const isValid = now - req.timestamp < this.TIMEOUT + 5000;
                     if (!isValid) {
-                        clearTimeout((req as any).timeoutId);
+                        if (req.timeoutId) {
+                            clearTimeout(req.timeoutId);
+                        }
                         cleanedCount++;
                     }
                     return isValid;
@@ -132,7 +137,9 @@ export class LongPollManager {
         // Clean up all pending requests
         for (const [, requests] of this.pendingRequests.entries()) {
             requests.forEach((req) => {
-                clearTimeout((req as any).timeoutId);
+                if (req.timeoutId) {
+                    clearTimeout(req.timeoutId);
+                }
                 req.context.response.status = 503;
                 req.context.response.body = { error: 'Server shutting down' };
                 req.resolve();

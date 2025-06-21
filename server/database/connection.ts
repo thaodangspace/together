@@ -217,9 +217,9 @@ export class DatabaseManager {
     }
 
     // Helper methods to simulate SQL-like queries for compatibility
-    static async query(sql: string, params: any[] = []): Promise<any[]> {
+    static async query(sql: string, params: unknown[] = []): Promise<unknown[]> {
         // This is a compatibility layer for existing code
-        const kv = this.getKv();
+        const _kv = this.getKv();
 
         if (sql.includes('SELECT * FROM rooms WHERE id = ?')) {
             const room = await this.getRoom(params[0]);
@@ -262,8 +262,8 @@ export class DatabaseManager {
         throw new Error(`Query not implemented: ${sql}`);
     }
 
-    static async execute(sql: string, params: any[] = []): Promise<any> {
-        const kv = this.getKv();
+    static async execute(sql: string, params: unknown[] = []): Promise<unknown> {
+        const _kv = this.getKv();
 
         if (sql.includes('INSERT INTO rooms')) {
             const room: Room = {
@@ -361,7 +361,7 @@ export class DatabaseManager {
         throw new Error(`Execute not implemented: ${sql}`);
     }
 
-    static async close(): Promise<void> {
+    static close(): void {
         if (this.kv) {
             this.kv.close();
             this.kv = null;

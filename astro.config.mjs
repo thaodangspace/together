@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';

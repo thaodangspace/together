@@ -48,5 +48,10 @@
             "indentWidth": 2,
             "singleQuote": true
         }
+    },
+    "lint": {
+        "exclude": [
+            ".astro/"
+        ]
     }
 }

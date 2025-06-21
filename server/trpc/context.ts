@@ -6,7 +6,7 @@ export interface Context {
     roomId?: string;
 }
 
-export async function createContext(): Promise<Context> {
+export function createContext(): Context {
     const kv = DatabaseManager.getKv();
     return { kv };
 }

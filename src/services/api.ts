@@ -37,7 +37,7 @@ export interface User {
 export interface RoomState {
     room: Room;
     users: User[];
-    queue: any[];
+    queue: unknown[];
 }
 
 export interface ApiResponse<T> {
@@ -69,14 +69,14 @@ export const roomAPI = {
         return response.data;
     },
 
-    async leaveRoom(roomId: string, userId: string): Promise<ApiResponse<any>> {
+    async leaveRoom(roomId: string, userId: string): Promise<ApiResponse<unknown>> {
         const response = await api.delete(`/api/rooms/${roomId}/leave`, {
             headers: { 'x-user-id': userId },
         });
         return response.data;
     },
 
-    async longPoll(roomId: string, userId: string): Promise<any> {
+    async longPoll(roomId: string, userId: string): Promise<{ type?: string; data?: unknown }> {
         try {
             const response = await api.get(`/api/rooms/${roomId}/poll`, {
                 params: { userId },
@@ -94,7 +94,7 @@ export const roomAPI = {
 };
 
 export const healthAPI = {
-    async checkHealth(): Promise<ApiResponse<any>> {
+    async checkHealth(): Promise<ApiResponse<unknown>> {
         const response = await api.get('/api/health');
         return response.data;
     },

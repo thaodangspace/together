@@ -12,7 +12,7 @@ export class Logger {
         this.level = LogLevel[level.toUpperCase() as keyof typeof LogLevel] || LogLevel.INFO;
     }
 
-    private log(level: LogLevel, message: string, meta?: any) {
+    private log(level: LogLevel, message: string, meta?: Record<string, unknown>) {
         if (level < this.level) return;
 
         const timestamp = new Date().toISOString();
@@ -28,19 +28,19 @@ export class Logger {
         console.log(JSON.stringify(logEntry));
     }
 
-    debug(message: string, meta?: any) {
+    debug(message: string, meta?: Record<string, unknown>) {
         this.log(LogLevel.DEBUG, message, meta);
     }
 
-    info(message: string, meta?: any) {
+    info(message: string, meta?: Record<string, unknown>) {
         this.log(LogLevel.INFO, message, meta);
     }
 
-    warn(message: string, meta?: any) {
+    warn(message: string, meta?: Record<string, unknown>) {
         this.log(LogLevel.WARN, message, meta);
     }
 
-    error(message: string, error?: Error, meta?: any) {
+    error(message: string, error?: Error, meta?: Record<string, unknown>) {
         this.log(LogLevel.ERROR, message, {
             error: error?.message,
             stack: error?.stack,
@@ -49,4 +49,6 @@ export class Logger {
     }
 }
 
-export const logger = new Logger(Deno.env.get('LOG_LEVEL') || 'info');
+// deno-lint-ignore no-explicit-any
+const denoEnv = (globalThis as any).Deno?.env;
+export const logger = new Logger(denoEnv?.get('LOG_LEVEL') || 'info');
