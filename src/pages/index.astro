@@ -148,17 +148,29 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </main>
 
-  <script>
+  <script type="module">
+    import { roomAPI } from '../services/api';
+
     // Basic form handling - will be enhanced with React components later
     document.getElementById('create-room-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target as HTMLFormElement);
       const roomName = formData.get('roomName') as string;
       const username = formData.get('username') as string;
-      
-      console.log('Creating room:', { roomName, username });
-      // TODO: Implement API call
-      alert('Room creation will be implemented in Phase 2');
+
+      try {
+        const res = await roomAPI.createRoom(roomName, username);
+        if (res.success && res.data) {
+          const { roomId, userId } = res.data;
+          localStorage.setItem('syncwatch-user', JSON.stringify({ roomId, userId, username }));
+          window.location.href = `/room/${roomId}`;
+        } else {
+          alert(res.error || 'Failed to create room');
+        }
+      } catch (err) {
+        console.error('Create room error', err);
+        alert('Failed to create room');
+      }
     });
 
     document.getElementById('join-room-form')?.addEventListener('submit', async (e) => {
@@ -166,10 +178,9 @@ import Layout from '../layouts/Layout.astro';
       const formData = new FormData(e.target as HTMLFormElement);
       const roomId = formData.get('roomId') as string;
       const username = formData.get('username') as string;
-      
+
       console.log('Joining room:', { roomId, username });
-      // TODO: Implement API call
       alert('Room joining will be implemented in Phase 2');
     });
   </script>
-</Layout> 
+</Layout>
