@@ -3406,12 +3406,11 @@
     ],
     "packageJson": {
       "dependencies": [
-        "npm:@astrojs/deno@5",
-        "npm:@astrojs/react@3",
+        "npm:@astrojs/react@^4.3.0",
         "npm:@astrojs/tailwind@5",
         "npm:@types/react-dom@^18.2.0",
         "npm:@types/react@^18.2.0",
-        "npm:astro@4",
+        "npm:astro@^5.10.0",
         "npm:axios@^1.10.0",
         "npm:react-dom@^18.2.0",
         "npm:react@^18.2.0",
