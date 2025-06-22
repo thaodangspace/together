@@ -28,6 +28,24 @@ async function build() {
             external: [], // Bundle everything
         });
 
+        // Compile Tailwind CSS
+        const tailwind = new Deno.Command('npx', {
+            args: [
+                'tailwindcss',
+                '-i',
+                './www/styles/global.css',
+                '-c',
+                './tailwind.config.js',
+                '-o',
+                './dist/styles.css',
+                '--minify',
+            ],
+            stdout: 'inherit',
+            stderr: 'inherit',
+        });
+        const { code } = await tailwind.output();
+        if (code !== 0) throw new Error('Tailwind build failed');
+
         // Copy HTML file from public directory
         await Deno.copyFile('./public/index.html', './dist/index.html');
 

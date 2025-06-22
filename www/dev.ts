@@ -31,6 +31,23 @@ async function devBuild() {
             external: [], // Bundle everything
         });
 
+        // Start Tailwind CSS in watch mode
+        const tailwind = new Deno.Command('npx', {
+            args: [
+                'tailwindcss',
+                '-i',
+                './www/styles/global.css',
+                '-c',
+                './tailwind.config.js',
+                '-o',
+                './dist/styles.css',
+                '--watch',
+            ],
+            stdout: 'inherit',
+            stderr: 'inherit',
+        });
+        tailwind.spawn();
+
         await ctx.watch();
         console.log('👀 Watching for changes...');
         console.log('📁 Output directory: ./dist');
