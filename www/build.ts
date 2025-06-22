@@ -1,4 +1,3 @@
-import * as esbuild from 'esbuild';
 import { ensureDir } from 'std/fs';
 
 async function build() {
@@ -8,25 +7,49 @@ async function build() {
     await ensureDir('./dist');
 
     try {
-        // Build the React app
-        await esbuild.build({
-            entryPoints: ['./www/main.tsx'],
-            bundle: true,
-            minify: true,
-            sourcemap: true,
-            target: 'es2020',
-            format: 'esm',
-            outfile: './dist/main.js',
-            jsx: 'automatic',
-            jsxImportSource: 'react',
-            loader: {
-                '.css': 'css',
-            },
-            define: {
-                'process.env.NODE_ENV': '"production"',
-            },
-            external: [], // Bundle everything
+        // Create a temporary bundle script
+        const bundleScript = `
+import * as esbuild from 'npm:esbuild@0.19.12';
+
+await esbuild.build({
+    entryPoints: ['./www/main.tsx'],
+    bundle: true,
+    minify: true,
+    sourcemap: true,
+    target: 'es2020',
+    format: 'esm',
+    outfile: './dist/main.js',
+    jsx: 'automatic',
+    jsxImportSource: 'react',
+    loader: {
+        '.css': 'css',
+    },
+    define: {
+        'process.env.NODE_ENV': '"production"',
+    },
+    external: [],
+    platform: 'browser',
+});
+
+console.log('✅ React app bundled successfully');
+`;
+
+        // Write the bundle script to a temporary file
+        await Deno.writeTextFile('./temp_bundle.ts', bundleScript);
+
+        // Run the bundle script
+        const esbuildCommand = new Deno.Command('deno', {
+            args: ['run', '--allow-all', '--node-modules-dir', './temp_bundle.ts'],
+            stdout: 'inherit',
+            stderr: 'inherit',
         });
+
+        const bundleResult = await esbuildCommand.output();
+
+        // Clean up temporary file
+        await Deno.remove('./temp_bundle.ts');
+
+        if (bundleResult.code !== 0) throw new Error('React build failed');
 
         // Compile Tailwind CSS
         const tailwind = new Deno.Command('npx', {
