@@ -1,4 +1,4 @@
-# SyncWatch - Phase 1 Implementation
+# SyncWatch - Deno + tRPC + React
 
 A real-time video watching application that allows users to watch YouTube videos together with friends.
 
@@ -22,22 +22,21 @@ deno task build && deno task server:start
 
 **For development with hot reload:**
 
-1. **Start the backend server:**
+1. **Start the server:**
 
 ```bash
 deno task server:dev
 ```
 
-✅ Backend server: **http://localhost:8000**
+✅ Server running: **http://localhost:8000**
 
-2. **In a separate terminal, start the frontend:**
+2. **In a separate terminal, start the frontend watcher:**
 
 ```bash
 deno task dev
 ```
 
-✅ Frontend with hot reload: **http://localhost:3000**
-_(API calls automatically proxied to port 8000)_
+✅ Frontend files served via the server on **http://localhost:8000**
 
 ## 🚀 Phase 1: Core Infrastructure
 
@@ -45,11 +44,11 @@ Phase 1 includes the foundational infrastructure needed for the SyncWatch applic
 
 ### ✅ Completed Features
 
--   **Backend Setup**: Deno.js server with Oak framework
--   **Database Schema**: SQLite database with tables for rooms, users, queue, and messages
--   **API Endpoints**: Basic REST API for room management
+-   **Backend Setup**: Deno.js server with Oak and tRPC
+-   **Database**: Deno KV store for rooms, users, queue, and messages
+-   **API Endpoints**: REST and tRPC routes for room management
 -   **Long-Polling System**: Real-time communication infrastructure
--   **Frontend Setup**: Astro with React and Tailwind CSS
+-   **Frontend Setup**: React with Tailwind CSS
 -   **Basic UI**: Landing page with room creation/joining forms
 
 ### 🏗️ Architecture
@@ -57,11 +56,11 @@ Phase 1 includes the foundational infrastructure needed for the SyncWatch applic
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Database      │
-│   (Astro)       │◄──►│   (Deno.js)     │◄──►│   (SQLite)      │
+│   (React)       │◄──►│   (Deno.js)     │◄──►│   (Deno KV)     │
 │                 │    │                 │    │                 │
 │ • React UI      │    │ • Oak Server    │    │ • Rooms         │
-│ • Tailwind CSS  │    │ • REST APIs     │    │ • Users         │
-│ • State Mgmt    │    │ • Long-Polling  │    │ • Queue         │
+│ • Tailwind CSS  │    │ • REST & tRPC   │    │ • Users         │
+│ • Zustand       │    │ • Long-Polling  │    │ • Queue         │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -73,45 +72,39 @@ Phase 1 includes the foundational infrastructure needed for the SyncWatch applic
 -   **Node.js** 18+ - [Install Node.js](https://nodejs.org/)
 -   **Git** - [Install Git](https://git-scm.com/)
 
-### 1. Backend Setup
+### 1. Server Setup
 
 ```bash
-# Navigate to backend directory
-cd backend
-
 # Copy environment variables
-cp env.example .env
+cp server/env.example server/.env
 
-# Start the backend server
-deno task dev
+# Start the server
+deno task server:dev
 ```
 
-The backend server will start on `http://localhost:8000`
+The server will start on `http://localhost:8000`
 
 ### 2. Frontend Setup
 
 ```bash
-# Navigate to frontend directory (in a new terminal)
-cd frontend
-
 # Install dependencies
 npm install
 
-# Start the frontend development server
-npm run dev
+# Start the React build watcher (new terminal)
+deno task dev
 ```
 
-The frontend will start on `http://localhost:4321`
+The frontend is served by the Deno server on `http://localhost:8000`
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the backend directory:
+Create a `.env` file in the `server` directory:
 
 ```bash
 PORT=8000
-DATABASE_URL=./database.db
+KV_DATABASE_URL=
 YOUTUBE_API_KEY=your_youtube_api_key_here
-CORS_ORIGIN=http://localhost:4321
+CORS_ORIGIN=http://localhost:8000
 JWT_SECRET=your_jwt_secret_here
 LOG_LEVEL=info
 NODE_ENV=development
@@ -136,27 +129,18 @@ NODE_ENV=development
 
 ## 🗄️ Database Schema
 
-### Tables Created
+The backend uses **Deno KV** for persistent storage with the following collections:
 
-1. **rooms**: Room information and current video state
-2. **users**: User information and online status
-3. **queue**: Video queue for each room
-4. **messages**: Chat messages (ready for Phase 5)
-
-### Indexes
-
--   `idx_rooms_owner` - Room owner lookup
--   `idx_users_room` - Users by room
--   `idx_queue_room` - Queue items by room
--   `idx_messages_room` - Messages by room
+1. **rooms** – current room state
+2. **users** – connected users per room
+3. **queue** – video queue entries
+4. **messages** – chat history
 
 ## 🧪 Testing Phase 1
 
 ### Backend Testing
 
 ```bash
-cd backend
-
 # Check server health
 curl http://localhost:8000/api/health
 
@@ -168,7 +152,7 @@ curl -X POST http://localhost:8000/api/rooms \
 
 ### Frontend Testing
 
-1. Open `http://localhost:4321` in your browser
+1. Open `http://localhost:8000` in your browser
 2. Fill out the "Create Room" form
 3. Check browser console for form submission logs
 4. Verify the UI displays correctly on mobile and desktop
@@ -177,32 +161,29 @@ curl -X POST http://localhost:8000/api/rooms \
 
 ```
 together/
-├── backend/
-│   ├── database/
-│   │   └── connection.ts       # Database connection and schema
-│   │   └── routes/
-│   │   │   └── api.ts             # API route handlers
-│   │   ├── services/
-│   │   │   ├── LongPollManager.ts # Long-polling management
-│   │   │   └── RoomService.ts     # Room business logic
-│   │   ├── types/
-│   │   │   └── database.ts        # TypeScript interfaces
-│   │   ├── deno.json              # Deno configuration
-│   │   ├── env.example            # Environment variables template
-│   │   └── server.ts              # Main server file
-│   ├── frontend/
-│   │   ├── src/
-│   │   │   ├── layouts/
-│   │   │   │   └── Layout.astro   # Main layout
-│   │   │   ├── pages/
-│   │   │   │   └── index.astro    # Landing page
-│   │   │   ├── services/
-│   │   │   │   └── api.ts         # API client
-│   │   │   └── styles/
-│   │   │   │   └── global.css     # Global styles
-│   │   │   ├── astro.config.mjs       # Astro configuration
-│   │   │   └── package.json           # Frontend dependencies
-│   └── README.md                  # This file
+├── server/                 # Deno backend
+│   ├── database/           # Deno KV helpers
+│   ├── routes/             # REST routes
+│   ├── services/           # Business logic
+│   ├── longpoll/           # Long-polling manager
+│   ├── trpc/               # tRPC router
+│   ├── utils/              # Logger and helpers
+│   ├── env.example         # Environment variables template
+│   └── server.ts           # Main server file
+├── www/                    # React frontend
+│   ├── components/
+│   ├── pages/
+│   ├── services/
+│   ├── styles/
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── build.ts
+│   └── dev.ts
+├── public/                 # Static assets
+│   └── index.html
+├── build.sh                # Build & start helper
+├── deno.json               # Deno tasks and deps
+└── README.md               # Project docs
 ```
 
 ## 🚦 Phase 1 Status
@@ -214,7 +195,7 @@ together/
 -   [x] Room service with CRUD operations
 -   [x] Long-polling manager for real-time communication
 -   [x] Basic API endpoints for room management
--   [x] Frontend project setup with Astro + React + Tailwind
+-   [x] Frontend project setup with React + Tailwind
 -   [x] API service for backend communication
 -   [x] Landing page with forms
 -   [x] Basic error handling and logging
@@ -233,15 +214,15 @@ together/
 1. **Forms are not functional** - They log to console but don't make API calls yet
 2. **No actual room functionality** - Database and APIs are ready but not connected to frontend
 3. **No authentication** - Using simple user ID headers
-4. **SQLite database** - Will need PostgreSQL for production scaling
+4. **Local Deno KV store** - Will need a persistent KV service for production
 
 ### TypeScript Errors
 
 Some TypeScript errors are expected in this phase as they relate to:
 
--   Deno-specific imports and APIs
--   Modern JavaScript features in Astro
--   These will resolve when the servers are running
+    -   Deno-specific imports and APIs
+    -   Modern React features using TypeScript
+    -   These will resolve when the servers are running
 
 ## 🚀 Next Steps (Phase 2)
 
