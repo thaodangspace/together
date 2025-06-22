@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.tsx';
+import AuthModal from '../components/AuthModal.tsx';
 import { roomAPI } from '../services/api.ts';
 
 function HomePage() {
     const navigate = useNavigate();
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingRoom, setPendingRoom] = useState<string | null>(null);
 
-    const handleCreateRoom = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const createRoom = async (roomName: string, username: string) => {
         setIsCreating(true);
-
-        const formData = new FormData(e.currentTarget);
-        const roomName = formData.get('roomName') as string;
-        const username = formData.get('username') as string;
-
         try {
             const res = await roomAPI.createRoom(roomName, username);
             if (res.success && res.data) {
@@ -34,6 +31,20 @@ function HomePage() {
         } finally {
             setIsCreating(false);
         }
+    };
+
+    const handleCreateRoom = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const roomName = formData.get('roomName') as string;
+        const auth = localStorage.getItem('syncwatch-auth');
+        const username = auth ? JSON.parse(auth).username : '';
+        if (!username) {
+            setPendingRoom(roomName);
+            setShowAuthModal(true);
+            return;
+        }
+        await createRoom(roomName, username);
     };
 
     const handleJoinRoom = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -61,6 +72,15 @@ function HomePage() {
             alert('Failed to join room');
         } finally {
             setIsJoining(false);
+        }
+    };
+
+    const handleAuthComplete = async (username: string) => {
+        localStorage.setItem('syncwatch-auth', JSON.stringify({ username }));
+        setShowAuthModal(false);
+        if (pendingRoom) {
+            await createRoom(pendingRoom, username);
+            setPendingRoom(null);
         }
     };
 
@@ -108,23 +128,6 @@ function HomePage() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label
-                                        htmlFor="username-create"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        Your Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="username-create"
-                                        name="username"
-                                        placeholder="Enter your name"
-                                        className="input-field"
-                                        required
-                                        disabled={isCreating}
-                                    />
-                                </div>
 
                                 <button
                                     type="submit"
@@ -268,6 +271,12 @@ function HomePage() {
                     </div>
                 </div>
             </main>
+            {showAuthModal && (
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
+                    onAuth={handleAuthComplete}
+                />
+            )}
         </Layout>
     );
 }
