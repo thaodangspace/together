@@ -1,69 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.tsx';
-import AuthModal from '../components/AuthModal.tsx';
 import { roomAPI } from '../services/api.ts';
 
 function HomePage() {
     const navigate = useNavigate();
-    const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false);
-    const [pendingRoom, setPendingRoom] = useState<string | null>(null);
-
-    const createRoom = async (roomName: string, username: string) => {
-        setIsCreating(true);
-        try {
-            const res = await roomAPI.createRoom(roomName, username);
-            if (res.success && res.data) {
-                const { roomId, userId } = res.data;
-                localStorage.setItem(
-                    'syncwatch-user',
-                    JSON.stringify({ roomId, userId, username })
-                );
-                navigate(`/room/${roomId}`);
-            } else {
-                alert(res.error || 'Failed to create room');
-            }
-        } catch (err) {
-            console.error('Create room error', err);
-            alert('Failed to create room');
-        } finally {
-            setIsCreating(false);
-        }
-    };
-
-    const handleCreateRoom = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const roomName = formData.get('roomName') as string;
-        const auth = localStorage.getItem('syncwatch-auth');
-        const username = auth ? JSON.parse(auth).username : '';
-        if (!username) {
-            setPendingRoom(roomName);
-            setShowAuthModal(true);
-            return;
-        }
-        await createRoom(roomName, username);
-    };
 
     const handleJoinRoom = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsJoining(true);
 
         const formData = new FormData(e.currentTarget);
-        const roomId = formData.get('roomId') as string;
         const username = formData.get('username') as string;
 
         try {
-            const res = await roomAPI.joinRoom(roomId, username);
+            const res = await roomAPI.joinRoom(username);
             if (res.success && res.data) {
-                const { userId } = res.data;
+                const { userId, room } = res.data;
                 localStorage.setItem(
                     'syncwatch-user',
-                    JSON.stringify({ roomId, userId, username })
+                    JSON.stringify({ roomId: room.id, userId, username })
                 );
-                navigate(`/room/${roomId}`);
+                navigate(`/room/${room.id}`);
             } else {
                 alert(res.error || 'Failed to join room');
             }
@@ -72,15 +31,6 @@ function HomePage() {
             alert('Failed to join room');
         } finally {
             setIsJoining(false);
-        }
-    };
-
-    const handleAuthComplete = async (username: string) => {
-        localStorage.setItem('syncwatch-auth', JSON.stringify({ username }));
-        setShowAuthModal(false);
-        if (pendingRoom) {
-            await createRoom(pendingRoom, username);
-            setPendingRoom(null);
         }
     };
 
@@ -97,88 +47,26 @@ function HomePage() {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-                        {/* Create Room Card */}
+                    <div className="max-w-sm mx-auto">
                         <div className="card">
                             <div className="mb-4">
                                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                                    Create Room
+                                    Join the Room
                                 </h2>
-                                <p className="text-gray-600">
-                                    Start a new room and invite friends to watch together
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleCreateRoom} className="space-y-4">
-                                <div>
-                                    <label
-                                        htmlFor="room-name"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        Room Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="room-name"
-                                        name="roomName"
-                                        placeholder="My Awesome Room"
-                                        className="input-field"
-                                        required
-                                        disabled={isCreating}
-                                    />
-                                </div>
-
-
-                                <button
-                                    type="submit"
-                                    className="btn-primary w-full"
-                                    disabled={isCreating}
-                                >
-                                    {isCreating ? 'Creating...' : 'Create Room'}
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Join Room Card */}
-                        <div className="card">
-                            <div className="mb-4">
-                                <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                                    Join Room
-                                </h2>
-                                <p className="text-gray-600">
-                                    Enter a room ID to join an existing room
-                                </p>
+                                <p className="text-gray-600">Enter your name to join the current room</p>
                             </div>
 
                             <form onSubmit={handleJoinRoom} className="space-y-4">
                                 <div>
                                     <label
-                                        htmlFor="room-id"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        Room ID
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="room-id"
-                                        name="roomId"
-                                        placeholder="Enter room ID"
-                                        className="input-field"
-                                        required
-                                        disabled={isJoining}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label
-                                        htmlFor="username-join"
+                                        htmlFor="username"
                                         className="block text-sm font-medium text-gray-700 mb-1"
                                     >
                                         Your Name
                                     </label>
                                     <input
                                         type="text"
-                                        id="username-join"
+                                        id="username"
                                         name="username"
                                         placeholder="Enter your name"
                                         className="input-field"
@@ -189,10 +77,10 @@ function HomePage() {
 
                                 <button
                                     type="submit"
-                                    className="btn-secondary w-full"
+                                    className="btn-primary w-full"
                                     disabled={isJoining}
                                 >
-                                    {isJoining ? 'Joining...' : 'Join Room'}
+                                    {isJoining ? 'Joining...' : 'Enter Room'}
                                 </button>
                             </form>
                         </div>
@@ -271,12 +159,6 @@ function HomePage() {
                     </div>
                 </div>
             </main>
-            {showAuthModal && (
-                <AuthModal
-                    onClose={() => setShowAuthModal(false)}
-                    onAuth={handleAuthComplete}
-                />
-            )}
         </Layout>
     );
 }

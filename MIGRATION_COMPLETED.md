@@ -57,8 +57,8 @@ together/
 
 ## Key Features Preserved
 
--   ✅ **Room Creation**: Create new rooms with custom names
--   ✅ **Room Joining**: Join existing rooms by ID
+-   ✅ **Single Room**: All users join the same default room
+-   ✅ **Room Joining**: Enter a name to join
 -   ✅ **User Management**: Username handling and persistence
 -   ✅ **API Integration**: All existing API endpoints functional
 -   ✅ **Real-time Features**: Long-polling system ready
@@ -114,6 +114,6 @@ The migration is complete and functional. Future enhancements can include:
 -   [x] Server serves React bundle correctly
 -   [x] Client-side routing works
 -   [x] API endpoints accessible
--   [x] Room creation/joining functional
+-   [x] Room joining functional
 -   [x] No Astro dependencies remaining
 -   [x] Development workflow established

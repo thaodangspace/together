@@ -11,9 +11,27 @@ import { longPollManager } from './longpoll/manager.ts';
 const env = await load();
 const PORT = parseInt(env.PORT || '8061');
 const CORS_ORIGIN = env.CORS_ORIGIN || 'http://localhost:8061';
+const DEFAULT_ROOM_ID = env.DEFAULT_ROOM_ID || 'main-room';
+const DEFAULT_ROOM_NAME = env.DEFAULT_ROOM_NAME || 'Main Room';
 
 // Initialize database
 await DatabaseManager.initialize();
+
+// Ensure the default room exists
+const existingDefault = await DatabaseManager.query(
+  'SELECT * FROM rooms WHERE id = ?',
+  [DEFAULT_ROOM_ID],
+);
+if (existingDefault.length === 0) {
+  await DatabaseManager.execute(
+    `INSERT INTO rooms (id, name, owner_id, created_at) VALUES (?, ?, ?, datetime('now'))`,
+    [DEFAULT_ROOM_ID, DEFAULT_ROOM_NAME, 'system'],
+  );
+  logger.info('Default room created', {
+    id: DEFAULT_ROOM_ID,
+    name: DEFAULT_ROOM_NAME,
+  });
+}
 
 // Initialize Oak application
 const app = new Application();
@@ -65,55 +83,8 @@ router.get('/health', (ctx) => {
 });
 
 // Room management endpoints
-router.post('/api/rooms', async (ctx) => {
-    const body = await ctx.request.body().value;
-    const { name, username } = body;
-
-    if (!name || !username) {
-        ctx.response.status = 400;
-        ctx.response.body = { error: 'Name and username are required' };
-        return;
-    }
-
-    const roomId = crypto.randomUUID();
-    const userId = crypto.randomUUID();
-
-    try {
-        // Create room
-        await DatabaseManager.execute(
-            `INSERT INTO rooms (id, name, owner_id, created_at) VALUES (?, ?, ?, datetime('now'))`,
-            [roomId, name, userId]
-        );
-
-        // Create owner user
-        await DatabaseManager.execute(
-            `INSERT INTO users (id, username, room_id, joined_at, last_seen) VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
-            [userId, username, roomId]
-        );
-
-        ctx.response.body = {
-            success: true,
-            data: {
-                roomId,
-                userId,
-                room: {
-                    id: roomId,
-                    name,
-                    owner_id: userId,
-                },
-            },
-        };
-
-        logger.info('Room created', { roomId, name, ownerId: userId });
-    } catch (error) {
-        logger.error('Error creating room', error as Error);
-        ctx.response.status = 500;
-        ctx.response.body = { error: 'Failed to create room' };
-    }
-});
-
-router.post('/api/rooms/:roomId/join', async (ctx) => {
-    const { roomId } = ctx.params;
+router.post('/api/join', async (ctx) => {
+    const roomId = DEFAULT_ROOM_ID;
     const body = await ctx.request.body().value;
     const { username } = body;
 
