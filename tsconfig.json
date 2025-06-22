@@ -1,7 +1,6 @@
 {
-    "extends": "astro/tsconfigs/strict",
     "compilerOptions": {
-        "types": ["astro/client"],
+        "types": ["react", "react-dom"],
         "jsx": "react-jsx",
         "jsxImportSource": "react",
         "allowJs": true,
@@ -18,6 +17,6 @@
         "isolatedModules": true,
         "noEmit": true
     },
-    "include": ["src/**/*", "server/**/*"],
+    "include": ["server/**/*", "www/**/*"],
     "exclude": ["node_modules", "dist", "www"]
 }
