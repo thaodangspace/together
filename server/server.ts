@@ -10,7 +10,7 @@ import { longPollManager } from './longpoll/manager.ts';
 // Load environment variables
 const env = await load();
 const PORT = parseInt(env.PORT || '8061');
-const CORS_ORIGIN = env.CORS_ORIGIN || 'http://localhost:3000';
+const CORS_ORIGIN = env.CORS_ORIGIN || 'http://localhost:8061';
 
 // Initialize database
 await DatabaseManager.initialize();
@@ -59,7 +59,7 @@ router.get('/health', (ctx) => {
     ctx.response.body = {
         status: 'OK',
         timestamp: new Date().toISOString(),
-        uptime: Deno.uptime(),
+        uptime: performance.now() / 1000, // uptime in seconds since server start
         version: '1.0.0',
     };
 });
@@ -407,17 +407,16 @@ router.get('/api/rooms/:roomId/messages', async (ctx) => {
     }
 });
 
-// Add static file serving middleware
-app.use(async (ctx, next) => {
-    // Skip static file serving for API routes
-    if (
-        ctx.request.url.pathname.startsWith('/api') ||
-        ctx.request.url.pathname.startsWith('/trpc')
-    ) {
-        await next();
-        return;
-    }
+// Long-polling routes
+app.use(longPollRouter.routes());
+app.use(longPollRouter.allowedMethods());
 
+// Main router
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+// Add static file serving middleware (this should be last)
+app.use(async (ctx, next) => {
     try {
         // Try to serve static files from the dist directory
         await send(ctx, ctx.request.url.pathname, {
@@ -431,19 +430,12 @@ app.use(async (ctx, next) => {
                 root: `${Deno.cwd()}/dist`,
             });
         } catch {
-            // If no dist directory exists, continue to next middleware
-            await next();
+            // If no dist directory exists, return 404
+            ctx.response.status = 404;
+            ctx.response.body = 'Not Found';
         }
     }
 });
-
-// Long-polling routes
-app.use(longPollRouter.routes());
-app.use(longPollRouter.allowedMethods());
-
-// Main router
-app.use(router.routes());
-app.use(router.allowedMethods());
 
 // Start server
 logger.info(`🚀 SyncWatch server starting on port ${PORT}`);

@@ -1,28 +1,28 @@
 {
+    "nodeModulesDir": "auto",
     "tasks": {
-        "dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv astro dev",
-        "start": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv astro start",
-        "build": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv astro build",
-        "preview": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv astro preview",
+        "dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch www/dev.ts",
+        "build": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv www/build.ts",
         "server:dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch server/server.ts",
         "server:start": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv server/server.ts",
+        "full:dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch server/server.ts",
         "full:build": "deno task build && deno task server:start",
-        "full:dev": "deno task build && deno task server:dev",
         "test": "deno test --allow-all --unstable-kv tests/",
         "fmt": "deno fmt",
         "lint": "deno lint"
     },
     "imports": {
-        "astro": "npm:astro@^4.0.0",
-        "@astrojs/deno": "npm:@astrojs/deno@^5.0.0",
-        "@astrojs/react": "npm:@astrojs/react@^3.0.0",
-        "@astrojs/tailwind": "npm:@astrojs/tailwind@^5.0.0",
         "react": "npm:react@^18.2.0",
         "react-dom": "npm:react-dom@^18.2.0",
+        "react-router-dom": "npm:react-router-dom@^6.8.0",
+        "zustand": "npm:zustand@^4.4.0",
+        "esbuild": "npm:esbuild@^0.19.0",
         "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",
         "oak/cors": "https://deno.land/x/cors@v1.2.2/mod.ts",
         "std/dotenv": "https://deno.land/std@0.200.0/dotenv/mod.ts",
         "std/uuid": "https://deno.land/std@0.200.0/uuid/mod.ts",
+        "std/path": "https://deno.land/std@0.200.0/path/mod.ts",
+        "std/fs": "https://deno.land/std@0.200.0/fs/mod.ts",
         "zod": "https://esm.sh/zod@3.22.4",
         "@trpc/server": "https://esm.sh/@trpc/server@10.45.0"
     },
@@ -30,7 +30,9 @@
         "allowJs": true,
         "lib": [
             "deno.window",
-            "deno.unstable"
+            "deno.unstable",
+            "dom",
+            "dom.asynciterable"
         ],
         "strict": true,
         "jsx": "react-jsx",
@@ -51,7 +53,8 @@
     },
     "lint": {
         "exclude": [
-            ".astro/"
+            "dist/",
+            "build/"
         ]
     }
 }

@@ -1,3 +1,6 @@
+// @ts-ignore: Deno global is available in Deno runtime
+declare const Deno: any;
+
 import { logger } from '../utils/logger.ts';
 
 interface Room {
