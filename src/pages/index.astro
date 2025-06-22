@@ -161,9 +161,12 @@ import Layout from '../layouts/Layout.astro';
       try {
         const res = await roomAPI.createRoom(roomName, username);
         if (res.success && res.data) {
-          const { roomId, userId } = res.data;
-          localStorage.setItem('syncwatch-user', JSON.stringify({ roomId, userId, username }));
-          window.location.href = `/room/${roomId}`;
+          const { room_id, user_id } = res.data;
+          localStorage.setItem(
+            'syncwatch-user',
+            JSON.stringify({ roomId: room_id, userId: user_id, username })
+          );
+          window.location.href = `/room/${room_id}`;
         } else {
           alert(res.error || 'Failed to create room');
         }
