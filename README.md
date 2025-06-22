@@ -114,8 +114,7 @@ NODE_ENV=development
 
 ### Room Management
 
--   `POST /api/rooms` - Create a new room
--   `POST /api/rooms/:roomId/join` - Join an existing room
+-   `POST /api/join` - Join the default room
 -   `GET /api/rooms/:roomId` - Get room state
 -   `DELETE /api/rooms/:roomId/leave` - Leave a room
 
@@ -144,16 +143,12 @@ The backend uses **Deno KV** for persistent storage with the following collectio
 # Check server health
 curl http://localhost:8000/api/health
 
-# Test room creation
-curl -X POST http://localhost:8000/api/rooms \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Test Room", "username": "Test User"}'
 ```
 
 ### Frontend Testing
 
 1. Open `http://localhost:8000` in your browser
-2. Fill out the "Create Room" form
+2. Enter your name and join the room
 3. Check browser console for form submission logs
 4. Verify the UI displays correctly on mobile and desktop
 
