@@ -1,12 +1,16 @@
 import { DatabaseManager } from '../database/connection.ts';
+import type { Context as OakContext } from 'oak';
 
 export interface Context {
-    kv: Deno.Kv;
-    userId?: string;
-    roomId?: string;
+  db: typeof DatabaseManager;
+  ip: string;
+  userId?: string;
+  roomId?: string;
 }
 
-export function createContext(): Context {
-    const kv = DatabaseManager.getKv();
-    return { kv };
+export function createContext(ctx: OakContext): Context {
+  return {
+    db: DatabaseManager,
+    ip: ctx.request.ip,
+  };
 }

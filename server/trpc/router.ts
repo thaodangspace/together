@@ -4,6 +4,10 @@ import { Context } from './context.ts';
 import { longPollManager } from '../longpoll/manager.ts';
 import { YouTubeService } from '../services/YouTubeService.ts';
 import { logger } from '../utils/logger.ts';
+import { v5, NAMESPACE_URL } from 'std/uuid';
+import { DatabaseManager } from '../database/connection.ts';
+
+const DEFAULT_ROOM_ID = Deno.env.get('DEFAULT_ROOM_ID') || 'main-room';
 
 const t = initTRPC.context<Context>().create();
 
@@ -70,18 +74,22 @@ export const trpcRouter = t.router({
         join: t.procedure
             .input(
                 z.object({
-                    roomId: z.string().uuid(),
                     username: z.string().min(1).max(50),
                 })
             )
-            .mutation(({ input, ctx }) => {
-                const userId = crypto.randomUUID();
+            .mutation(async function ({ input, ctx }) {
+                const roomId = DEFAULT_ROOM_ID;
+                const ip = ctx.ip;
+                const userId = await v5.generate(
+                    NAMESPACE_URL,
+                    new TextEncoder().encode(ip),
+                );
 
                 try {
                     // Check if room exists
-                    const room = ctx.db.query('SELECT * FROM rooms WHERE id = ?', [
-                        input.roomId,
-                    ])[0];
+                    const room = (await ctx.db.query('SELECT * FROM rooms WHERE id = ?', [
+                        roomId,
+                    ]))[0];
 
                     if (!room) {
                         throw new TRPCError({
@@ -91,24 +99,33 @@ export const trpcRouter = t.router({
                     }
 
                     // Create user
-                    ctx.db.execute(
-                        `INSERT INTO users (id, username, room_id, joined_at, last_seen) 
+                    const existingUser = await ctx.db.getUser(userId);
+                    if (existingUser) {
+                        await ctx.db.updateUser(userId, {
+                            username: input.username,
+                            room_id: roomId,
+                            is_online: true,
+                        });
+                    } else {
+                        await ctx.db.execute(
+                            `INSERT INTO users (id, username, room_id, joined_at, last_seen)
              VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
-                        [userId, input.username, input.roomId]
-                    );
+                            [userId, input.username, roomId],
+                        );
+                    }
 
                     // Get room info with current video and queue
-                    const roomInfo = this.getRoomInfo(ctx.db, input.roomId);
+                    const roomInfo = this.getRoomInfo(ctx.db, roomId);
 
                     // Notify other users
-                    longPollManager.notifyRoom(input.roomId, {
+                    longPollManager.notifyRoom(roomId, {
                         type: 'user_joined',
                         data: { userId, username: input.username },
                         timestamp: Date.now(),
                     });
 
                     logger.info('User joined room', {
-                        roomId: input.roomId,
+                        roomId,
                         userId,
                         username: input.username,
                     });
@@ -195,6 +212,25 @@ export const trpcRouter = t.router({
                     });
                 }
             }),
+    }),
+
+    // User procedures
+    user: t.router({
+        current: t.procedure.query(async ({ ctx }) => {
+            const roomId = DEFAULT_ROOM_ID;
+            const userId = await v5.generate(
+                NAMESPACE_URL,
+                new TextEncoder().encode(ctx.ip),
+            );
+            const user = await ctx.db.getUser(userId);
+            if (user) {
+                return {
+                    success: true,
+                    data: { userId: user.id, username: user.username, roomId },
+                };
+            }
+            return { success: false };
+        }),
     }),
 
     // Video control procedures

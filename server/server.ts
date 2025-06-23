@@ -6,6 +6,9 @@ import { DatabaseManager } from './database/connection.ts';
 import { logger } from './utils/logger.ts';
 import { YouTubeService } from './services/YouTubeService.ts';
 import { longPollManager } from './longpoll/manager.ts';
+import { trpcRouter } from './trpc/router.ts';
+import { createContext } from './trpc/context.ts';
+import { createOakTRPCHandler } from './trpc/oak-adapter.ts';
 
 // Load environment variables
 const env = await load();
@@ -36,6 +39,10 @@ if (existingDefault.length === 0) {
 // Initialize Oak application
 const app = new Application();
 const router = new Router();
+
+// tRPC middleware
+const trpcMiddleware = createOakTRPCHandler(trpcRouter, '/trpc', createContext);
+router.all('/trpc/:path+', trpcMiddleware);
 
 // CORS middleware
 app.use(
@@ -82,92 +89,6 @@ router.get('/health', (ctx) => {
     };
 });
 
-// Room management endpoints
-router.post('/api/join', async (ctx) => {
-    const roomId = DEFAULT_ROOM_ID;
-    const body = await ctx.request.body().value;
-    const { username } = body;
-
-    if (!username) {
-        ctx.response.status = 400;
-        ctx.response.body = { error: 'Username is required' };
-        return;
-    }
-
-    const userId = crypto.randomUUID();
-
-    try {
-        // Check if room exists
-        const room = await DatabaseManager.query('SELECT * FROM rooms WHERE id = ?', [roomId]);
-        if (room.length === 0) {
-            ctx.response.status = 404;
-            ctx.response.body = { error: 'Room not found' };
-            return;
-        }
-
-        // Create user
-        await DatabaseManager.execute(
-            `INSERT INTO users (id, username, room_id, joined_at, last_seen) 
-       VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
-            [userId, username, roomId]
-        );
-
-        // Get room info
-        const users = await DatabaseManager.query(
-            'SELECT id, username, joined_at FROM users WHERE room_id = ? AND is_online = 1',
-            [roomId]
-        );
-
-        const queue = await DatabaseManager.query(
-            `SELECT q.*, u.username as added_by_username 
-       FROM queue q 
-       JOIN users u ON q.added_by = u.id 
-       WHERE q.room_id = ? 
-       ORDER BY q.position ASC`,
-            [roomId]
-        );
-
-        const roomInfo = {
-            id: room[0].id,
-            name: room[0].name,
-            owner_id: room[0].owner_id,
-            current_video: room[0].current_video_id
-                ? {
-                      id: room[0].current_video_id,
-                      url: room[0].current_video_url,
-                      title: room[0].current_video_title,
-                      duration: room[0].current_video_duration,
-                      position: room[0].current_position,
-                      is_playing: room[0].is_playing,
-                  }
-                : null,
-            queue,
-            users,
-            users_count: users.length,
-        };
-
-        ctx.response.body = {
-            success: true,
-            data: {
-                userId,
-                room: roomInfo,
-            },
-        };
-
-        // Notify existing users about new user
-        longPollManager.notifyRoom(roomId, {
-            type: 'user_joined',
-            data: { userId, username },
-            timestamp: Date.now(),
-        });
-
-        logger.info('User joined room', { roomId, userId, username });
-    } catch (error) {
-        logger.error('Error joining room', error as Error);
-        ctx.response.status = 500;
-        ctx.response.body = { error: 'Failed to join room' };
-    }
-});
 
 // Video control endpoints
 router.post('/api/rooms/:roomId/video/state', async (ctx) => {
