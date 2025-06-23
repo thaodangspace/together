@@ -5,15 +5,13 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 export function createOakTRPCHandler<TRouter extends AnyRouter>(
   router: TRouter,
   endpoint: string,
-  createContext: (ctx: OakContext) => any,
+  createContext: (ctx: OakContext) => unknown,
 ) {
   return async (ctx: OakContext) => {
     const request = new Request(ctx.request.url, {
       method: ctx.request.method,
       headers: ctx.request.headers,
-      body: ctx.request.hasBody
-        ? ctx.request.body({ type: 'stream' }).value
-        : undefined,
+      body: ctx.request.hasBody ? ctx.request.body({ type: 'stream' }).value : undefined,
     });
 
     const response = await fetchRequestHandler({

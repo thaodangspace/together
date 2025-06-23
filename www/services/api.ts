@@ -14,9 +14,9 @@ interface JoinRoomResponse {
       id: string;
       name: string;
       owner_id: string;
-      current_video: any;
-      queue: any[];
-      users: any[];
+      current_video: unknown;
+      queue: unknown[];
+      users: unknown[];
       users_count: number;
     };
   };
