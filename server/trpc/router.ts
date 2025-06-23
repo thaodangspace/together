@@ -80,16 +80,13 @@ export const trpcRouter = t.router({
             .mutation(async function ({ input, ctx }) {
                 const roomId = DEFAULT_ROOM_ID;
                 const ip = ctx.ip;
-                const userId = await v5.generate(
-                    NAMESPACE_URL,
-                    new TextEncoder().encode(ip),
-                );
+                const userId = await v5.generate(NAMESPACE_URL, new TextEncoder().encode(ip));
 
                 try {
                     // Check if room exists
-                    const room = (await ctx.db.query('SELECT * FROM rooms WHERE id = ?', [
-                        roomId,
-                    ]))[0];
+                    const room = (
+                        await ctx.db.query('SELECT * FROM rooms WHERE id = ?', [roomId])
+                    )[0];
 
                     if (!room) {
                         throw new TRPCError({
@@ -110,12 +107,12 @@ export const trpcRouter = t.router({
                         await ctx.db.execute(
                             `INSERT INTO users (id, username, room_id, joined_at, last_seen)
              VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
-                            [userId, input.username, roomId],
+                            [userId, input.username, roomId]
                         );
                     }
 
                     // Get room info with current video and queue
-                    const roomInfo = this.getRoomInfo(ctx.db, roomId);
+                    const roomInfo = getRoomInfo(ctx.db, roomId);
 
                     // Notify other users
                     longPollManager.notifyRoom(roomId, {
@@ -202,7 +199,7 @@ export const trpcRouter = t.router({
             )
             .query(({ input, ctx }) => {
                 try {
-                    const roomInfo = this.getRoomInfo(ctx.db, input.roomId);
+                    const roomInfo = getRoomInfo(ctx.db, input.roomId);
                     return { success: true, data: roomInfo };
                 } catch (error) {
                     logger.error('Error getting room info', error as Error);
@@ -218,10 +215,7 @@ export const trpcRouter = t.router({
     user: t.router({
         current: t.procedure.query(async ({ ctx }) => {
             const roomId = DEFAULT_ROOM_ID;
-            const userId = await v5.generate(
-                NAMESPACE_URL,
-                new TextEncoder().encode(ctx.ip),
-            );
+            const userId = await v5.generate(NAMESPACE_URL, new TextEncoder().encode(ctx.ip));
             const user = await ctx.db.getUser(userId);
             if (user) {
                 return {
@@ -425,7 +419,7 @@ export const trpcRouter = t.router({
                         input.roomId,
                     ])[0];
                     if (!room?.current_video_id) {
-                        await this.startNextVideo(ctx.db, input.roomId, input.userId);
+                        startNextVideo(ctx.db, input.roomId, input.userId);
                     }
 
                     // Notify users
@@ -687,9 +681,9 @@ export const trpcRouter = t.router({
                     offset: z.number().min(0).default(0),
                 })
             )
-            .query(({ input, ctx }) => {
+            .query(async ({ input, ctx }) => {
                 try {
-                    const messages = ctx.db.query(
+                    const messages = await ctx.db.query(
                         `SELECT id, user_id, username, content, message_type, created_at
              FROM messages 
              WHERE room_id = ? 
@@ -698,7 +692,7 @@ export const trpcRouter = t.router({
                         [input.roomId, input.limit, input.offset]
                     );
 
-                    return { success: true, data: messages.reverse() };
+                    return { success: true, data: (messages as any[]).reverse() };
                 } catch (error) {
                     logger.error('Error getting messages', error as Error);
                     throw new TRPCError({
@@ -708,56 +702,58 @@ export const trpcRouter = t.router({
                 }
             }),
     }),
+});
 
-    // Helper methods
-    getRoomInfo: (db: unknown, roomId: string) => {
-        const room = db.query('SELECT * FROM rooms WHERE id = ?', [roomId])[0];
-        if (!room) throw new Error('Room not found');
+// Helper functions
+function getRoomInfo(db: any, roomId: string) {
+    const room = (db.query('SELECT * FROM rooms WHERE id = ?', [roomId]) as any[])[0];
+    if (!room) throw new Error('Room not found');
 
-        const users = db.query(
-            'SELECT id, username, joined_at FROM users WHERE room_id = ? AND is_online = 1',
-            [roomId]
-        );
+    const users = db.query(
+        'SELECT id, username, joined_at FROM users WHERE room_id = ? AND is_online = 1',
+        [roomId]
+    ) as any[];
 
-        const queue = db.query(
-            `SELECT q.*, u.username as added_by_username 
+    const queue = db.query(
+        `SELECT q.*, u.username as added_by_username 
        FROM queue q 
        JOIN users u ON q.added_by = u.id 
        WHERE q.room_id = ? 
        ORDER BY q.position ASC`,
-            [roomId]
-        );
+        [roomId]
+    ) as any[];
 
-        return {
-            id: room.id,
-            name: room.name,
-            owner_id: room.owner_id,
-            current_video: room.current_video_id
-                ? {
-                      id: room.current_video_id,
-                      url: room.current_video_url,
-                      title: room.current_video_title,
-                      duration: room.current_video_duration,
-                      position: room.current_position,
-                      is_playing: room.is_playing,
-                  }
-                : null,
-            queue,
-            users,
-            users_count: users.length,
-        };
-    },
+    return {
+        id: room.id,
+        name: room.name,
+        owner_id: room.owner_id,
+        current_video: room.current_video_id
+            ? {
+                  id: room.current_video_id,
+                  url: room.current_video_url,
+                  title: room.current_video_title,
+                  duration: room.current_video_duration,
+                  position: room.current_position,
+                  is_playing: room.is_playing,
+              }
+            : null,
+        queue,
+        users,
+        users_count: users.length,
+    };
+}
 
-    startNextVideo: (db: unknown, roomId: string, userId: string) => {
-        const nextVideo = db.query(
-            'SELECT * FROM queue WHERE room_id = ? ORDER BY position ASC LIMIT 1',
-            [roomId]
-        )[0];
+function startNextVideo(db: any, roomId: string, userId: string) {
+    const nextVideo = (
+        db.query('SELECT * FROM queue WHERE room_id = ? ORDER BY position ASC LIMIT 1', [
+            roomId,
+        ]) as any[]
+    )[0];
 
-        if (nextVideo) {
-            // Update room with new current video
-            db.execute(
-                `UPDATE rooms SET 
+    if (nextVideo) {
+        // Update room with new current video
+        db.execute(
+            `UPDATE rooms SET 
          current_video_id = ?, 
          current_video_url = ?, 
          current_video_title = ?, 
@@ -766,41 +762,40 @@ export const trpcRouter = t.router({
          is_playing = true, 
          last_updated = datetime('now') 
          WHERE id = ?`,
-                [
-                    nextVideo.video_id,
-                    nextVideo.video_url,
-                    nextVideo.video_title,
-                    nextVideo.video_duration,
-                    roomId,
-                ]
-            );
+            [
+                nextVideo.video_id,
+                nextVideo.video_url,
+                nextVideo.video_title,
+                nextVideo.video_duration,
+                roomId,
+            ]
+        );
 
-            // Remove from queue
-            db.execute('DELETE FROM queue WHERE id = ?', [nextVideo.id]);
+        // Remove from queue
+        db.execute('DELETE FROM queue WHERE id = ?', [nextVideo.id]);
 
-            // Update positions
-            db.execute(
-                'UPDATE queue SET position = position - 1 WHERE room_id = ? AND position > ?',
-                [roomId, nextVideo.position]
-            );
+        // Update positions
+        db.execute('UPDATE queue SET position = position - 1 WHERE room_id = ? AND position > ?', [
+            roomId,
+            nextVideo.position,
+        ]);
 
-            // Notify users
-            longPollManager.notifyRoom(roomId, {
-                type: 'current_video_changed',
-                data: {
-                    video: {
-                        id: nextVideo.video_id,
-                        url: nextVideo.video_url,
-                        title: nextVideo.video_title,
-                        duration: nextVideo.video_duration,
-                        thumbnail: nextVideo.video_thumbnail,
-                    },
-                    updatedBy: userId,
+        // Notify users
+        longPollManager.notifyRoom(roomId, {
+            type: 'current_video_changed',
+            data: {
+                video: {
+                    id: nextVideo.video_id,
+                    url: nextVideo.video_url,
+                    title: nextVideo.video_title,
+                    duration: nextVideo.video_duration,
+                    thumbnail: nextVideo.video_thumbnail,
                 },
-                timestamp: Date.now(),
-            });
-        }
-    },
-});
+                updatedBy: userId,
+            },
+            timestamp: Date.now(),
+        });
+    }
+}
 
 export type AppRouter = typeof trpcRouter;

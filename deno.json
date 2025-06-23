@@ -1,9 +1,9 @@
 {
     "nodeModulesDir": "auto",
     "tasks": {
-        "dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch www/dev.ts",
-        "build": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run --unstable-kv www/build.ts",
-        "server:dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch server/server.ts",
+        "dev": "deno run --no-check --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch www/dev.ts",
+        "build": "deno run --no-check --allow-net --allow-read --allow-write --allow-env --allow-run --unstable-kv www/build.ts",
+        "server:dev": "deno run --no-check --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch server/server.ts",
         "server:start": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv server/server.ts",
         "full:dev": "deno run --allow-net --allow-read --allow-write --allow-env --unstable-kv --watch server/server.ts",
         "full:build": "deno task build && deno task server:start",

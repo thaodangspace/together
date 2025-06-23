@@ -28,7 +28,7 @@ async function devBuild() {
             define: {
                 'process.env.NODE_ENV': '"development"',
             },
-            external: [], // Bundle everything
+            external: ['@trpc/client', '@trpc/server'], // Mark TRPC as external
         });
 
         // Start Tailwind CSS in watch mode

@@ -27,7 +27,7 @@ await esbuild.build({
     define: {
         'process.env.NODE_ENV': '"production"',
     },
-    external: [],
+    external: ['@trpc/client', '@trpc/server'],
     platform: 'browser',
 });
 

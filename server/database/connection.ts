@@ -220,12 +220,12 @@ export class DatabaseManager {
     }
 
     // Helper methods to simulate SQL-like queries for compatibility
-    static async query(sql: string, params: unknown[] = []): Promise<unknown[]> {
+    static async query(sql: string, params: (string | number)[] = []): Promise<unknown[]> {
         // This is a compatibility layer for existing code
         const _kv = this.getKv();
 
         if (sql.includes('SELECT * FROM rooms WHERE id = ?')) {
-            const room = await this.getRoom(params[0]);
+            const room = await this.getRoom(params[0] as string);
             return room ? [room] : [];
         }
 
@@ -234,16 +234,16 @@ export class DatabaseManager {
                 'SELECT id, username, joined_at FROM users WHERE room_id = ? AND is_online = 1'
             )
         ) {
-            return await this.getUsersByRoom(params[0]);
+            return await this.getUsersByRoom(params[0] as string);
         }
 
         if (sql.includes('SELECT username FROM users WHERE id = ?')) {
-            const user = await this.getUser(params[0]);
+            const user = await this.getUser(params[0] as string);
             return user ? [{ username: user.username }] : [];
         }
 
         if (sql.includes('FROM queue q') && sql.includes('ORDER BY q.position ASC')) {
-            const queue = await this.getQueue(params[0]);
+            const queue = await this.getQueue(params[0] as string);
             // Add username for each queue item
             const enrichedQueue = [];
             for (const item of queue) {
@@ -257,31 +257,34 @@ export class DatabaseManager {
         }
 
         if (sql.includes('FROM messages') && sql.includes('ORDER BY created_at DESC')) {
-            const limit = params[1] || 50;
-            const offset = params[2] || 0;
-            return await this.getMessages(params[0], limit, offset);
+            const limit = (params[1] as number) || 50;
+            const offset = (params[2] as number) || 0;
+            return await this.getMessages(params[0] as string, limit, offset);
         }
 
         throw new Error(`Query not implemented: ${sql}`);
     }
 
-    static async execute(sql: string, params: unknown[] = []): Promise<unknown> {
+    static async execute(
+        sql: string,
+        params: (string | number | boolean)[] = []
+    ): Promise<unknown> {
         const _kv = this.getKv();
 
         if (sql.includes('INSERT INTO rooms')) {
             const room: Room = {
-                id: params[0],
-                name: params[1],
-                owner_id: params[2],
-                current_video_id: params[3],
-                current_video_url: params[4],
-                current_video_title: params[5],
-                current_video_duration: params[6],
-                current_position: params[7] || 0,
-                is_playing: params[8] || false,
+                id: params[0] as string,
+                name: params[1] as string,
+                owner_id: params[2] as string,
+                current_video_id: params[3] as string | undefined,
+                current_video_url: params[4] as string | undefined,
+                current_video_title: params[5] as string | undefined,
+                current_video_duration: params[6] as number | undefined,
+                current_position: (params[7] as number) || 0,
+                is_playing: (params[8] as boolean) || false,
                 last_updated: new Date().toISOString(),
                 created_at: new Date().toISOString(),
-                max_users: params[9] || 50,
+                max_users: (params[9] as number) || 50,
             };
             await this.createRoom(room);
             return { lastInsertRowId: params[0] };
@@ -289,9 +292,9 @@ export class DatabaseManager {
 
         if (sql.includes('INSERT INTO users')) {
             const user: User = {
-                id: params[0],
-                username: params[1],
-                room_id: params[2],
+                id: params[0] as string,
+                username: params[1] as string,
+                room_id: params[2] as string | undefined,
                 is_online: true,
                 joined_at: new Date().toISOString(),
                 last_seen: new Date().toISOString(),
@@ -303,14 +306,14 @@ export class DatabaseManager {
         if (sql.includes('INSERT INTO queue')) {
             const item: QueueItem = {
                 id: crypto.randomUUID(),
-                room_id: params[0],
-                video_id: params[1],
-                video_url: params[2],
-                video_title: params[3],
-                video_duration: params[4],
-                video_thumbnail: params[5],
-                added_by: params[6],
-                position: params[7],
+                room_id: params[0] as string,
+                video_id: params[1] as string,
+                video_url: params[2] as string,
+                video_title: params[3] as string | undefined,
+                video_duration: params[4] as number | undefined,
+                video_thumbnail: params[5] as string | undefined,
+                added_by: params[6] as string,
+                position: params[7] as number,
                 added_at: new Date().toISOString(),
             };
             await this.addToQueue(item);
@@ -322,11 +325,11 @@ export class DatabaseManager {
             const now = new Date().toISOString();
             const message: Message = {
                 id: messageId,
-                room_id: params[0],
-                user_id: params[1],
-                username: params[2],
-                content: params[3],
-                message_type: params[4] || 'text',
+                room_id: params[0] as string,
+                user_id: params[1] as string,
+                username: params[2] as string,
+                content: params[3] as string,
+                message_type: (params[4] as string) || 'text',
                 created_at: now,
             };
             await this.createMessage(message);
@@ -334,20 +337,20 @@ export class DatabaseManager {
         }
 
         if (sql.includes('UPDATE rooms SET')) {
-            const roomId = params[params.length - 1]; // Last param is usually the ID
+            const roomId = params[params.length - 1] as string; // Last param is usually the ID
             const updates: Partial<Room> = {};
 
             if (sql.includes('current_video_id')) {
-                updates.current_video_id = params[0];
-                updates.current_video_url = params[1];
-                updates.current_video_title = params[2];
-                updates.current_video_duration = params[3];
+                updates.current_video_id = params[0] as string | undefined;
+                updates.current_video_url = params[1] as string | undefined;
+                updates.current_video_title = params[2] as string | undefined;
+                updates.current_video_duration = params[3] as number | undefined;
             }
             if (sql.includes('current_position')) {
-                updates.current_position = params[0];
+                updates.current_position = params[0] as number;
             }
             if (sql.includes('is_playing')) {
-                updates.is_playing = params[0];
+                updates.is_playing = params[0] as boolean;
             }
 
             await this.updateRoom(roomId, updates);
@@ -355,8 +358,8 @@ export class DatabaseManager {
         }
 
         if (sql.includes('DELETE FROM queue WHERE')) {
-            const roomId = params[0];
-            const itemId = params[1];
+            const roomId = params[0] as string;
+            const itemId = params[1] as string;
             await this.deleteQueueItem(roomId, itemId);
             return { changes: 1 };
         }
