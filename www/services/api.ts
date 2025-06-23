@@ -1,10 +1,18 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '../../server/trpc/router.ts';
 
+// Get the API base URL from the current window location
+// This works both in development and production
+const getApiBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+        return window.location.origin;
+    }
+    // Fallback for SSR or other environments
+    return 'http://localhost:8061';
+};
+
 const trpc = createTRPCProxyClient<AppRouter>({
-    links: [
-        httpBatchLink({ url: `${Deno.env.get('API_BASE_URL') || 'http://localhost:8061'}/trpc` }),
-    ],
+    links: [httpBatchLink({ url: `${getApiBaseUrl()}/trpc` })],
 });
 
 interface JoinRoomResponse {
