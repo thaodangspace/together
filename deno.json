@@ -28,7 +28,6 @@
         "@trpc/client": "https://esm.sh/@trpc/client@10.45.0"
     },
     "compilerOptions": {
-        "allowJs": true,
         "lib": [
             "deno.window",
             "deno.unstable",
