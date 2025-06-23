@@ -11,29 +11,27 @@ import { createContext } from './trpc/context.ts';
 import { createOakTRPCHandler } from './trpc/oak-adapter.ts';
 
 // Load environment variables
-const env = await load();
-const PORT = parseInt(env.PORT || '8061');
-const CORS_ORIGIN = env.CORS_ORIGIN || 'http://localhost:8061';
-const DEFAULT_ROOM_ID = env.DEFAULT_ROOM_ID || 'main-room';
-const DEFAULT_ROOM_NAME = env.DEFAULT_ROOM_NAME || 'Main Room';
+const PORT = parseInt(Deno.env.get('PORT') || '8061');
+const CORS_ORIGIN = Deno.env.get('CORS_ORIGIN') || 'http://localhost:8061';
+const DEFAULT_ROOM_ID = Deno.env.get('DEFAULT_ROOM_ID') || 'main-room';
+const DEFAULT_ROOM_NAME = Deno.env.get('DEFAULT_ROOM_NAME') || 'Main Room';
 
 // Initialize database
 await DatabaseManager.initialize();
 
 // Ensure the default room exists
-const existingDefault = await DatabaseManager.query(
-  'SELECT * FROM rooms WHERE id = ?',
-  [DEFAULT_ROOM_ID],
-);
+const existingDefault = await DatabaseManager.query('SELECT * FROM rooms WHERE id = ?', [
+    DEFAULT_ROOM_ID,
+]);
 if (existingDefault.length === 0) {
-  await DatabaseManager.execute(
-    `INSERT INTO rooms (id, name, owner_id, created_at) VALUES (?, ?, ?, datetime('now'))`,
-    [DEFAULT_ROOM_ID, DEFAULT_ROOM_NAME, 'system'],
-  );
-  logger.info('Default room created', {
-    id: DEFAULT_ROOM_ID,
-    name: DEFAULT_ROOM_NAME,
-  });
+    await DatabaseManager.execute(
+        `INSERT INTO rooms (id, name, owner_id, created_at) VALUES (?, ?, ?, datetime('now'))`,
+        [DEFAULT_ROOM_ID, DEFAULT_ROOM_NAME, 'system']
+    );
+    logger.info('Default room created', {
+        id: DEFAULT_ROOM_ID,
+        name: DEFAULT_ROOM_NAME,
+    });
 }
 
 // Initialize Oak application
@@ -88,7 +86,6 @@ router.get('/health', (ctx) => {
         version: '1.0.0',
     };
 });
-
 
 // Video control endpoints
 router.post('/api/rooms/:roomId/video/state', async (ctx) => {

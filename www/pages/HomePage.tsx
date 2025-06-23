@@ -68,7 +68,9 @@ function HomePage() {
                                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">
                                     Join the Room
                                 </h2>
-                                <p className="text-gray-600">Enter your name to join the current room</p>
+                                <p className="text-gray-600">
+                                    Enter your name to join the current room
+                                </p>
                             </div>
 
                             <form onSubmit={handleJoinRoom} className="space-y-4">
