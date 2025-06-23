@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.tsx';
 import { roomAPI } from '../services/api.ts';
@@ -6,6 +6,21 @@ import { roomAPI } from '../services/api.ts';
 function HomePage() {
     const navigate = useNavigate();
     const [isJoining, setIsJoining] = useState(false);
+
+    useEffect(() => {
+        async function checkUser() {
+            const res = await roomAPI.getCurrentUser();
+            if (res.success && res.data) {
+                const { userId, roomId, username } = res.data;
+                localStorage.setItem(
+                    'syncwatch-user',
+                    JSON.stringify({ roomId, userId, username })
+                );
+                navigate(`/room/${roomId}`);
+            }
+        }
+        checkUser();
+    }, []);
 
     const handleJoinRoom = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
