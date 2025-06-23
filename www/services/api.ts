@@ -1,9 +1,10 @@
-const API_BASE_URL = Deno.env.get('API_BASE_URL') || 'http://localhost:8061';
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '../../server/trpc/router.ts';
 
 const trpc = createTRPCProxyClient<AppRouter>({
-    links: [httpBatchLink({ url: `${API_BASE_URL}/trpc` })],
+    links: [
+        httpBatchLink({ url: `${Deno.env.get('API_BASE_URL') || 'http://localhost:8061'}/trpc` }),
+    ],
 });
 
 interface JoinRoomResponse {
