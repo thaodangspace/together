@@ -3968,6 +3968,7 @@ dependencies = [
  "console_log",
  "dotenv",
  "futures",
+ "gloo-net",
  "gloo-timers",
  "leptos",
  "leptos_axum",

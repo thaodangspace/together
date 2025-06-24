@@ -42,6 +42,7 @@ async fn main() {
             App,
         ))
         .nest_service("/events", app_state.event_handler())
+        .nest_service("/longpoll", app_state.long_poll_handler())
         .nest_service("/pkg", ServeDir::new("target/site/pkg"))
         .nest_service("/public", ServeDir::new("public"))
         .with_state(leptos_options.clone());
