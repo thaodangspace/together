@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct User {
     pub id: String,
     pub username: String,
@@ -11,6 +12,7 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct QueueItem {
     pub id: i32,
     pub video_id: String,
@@ -24,6 +26,7 @@ pub struct QueueItem {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct Message {
     pub id: i32,
     pub user_id: String,
@@ -34,6 +37,7 @@ pub struct Message {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct VideoState {
     pub id: i32,
     pub current_video_id: Option<String>,

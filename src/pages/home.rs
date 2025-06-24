@@ -1,5 +1,11 @@
 use leptos::*;
 use crate::components::{JoinModal, VideoPlayer, Queue, Chat, UserList};
+#[cfg(feature = "ssr")]
+use crate::server::functions::join_room;
+#[cfg(not(feature = "ssr"))]
+use crate::server_functions::join_room;
+use leptos::spawn_local;
+use leptos::logging;
 
 #[component]
 pub fn Home() -> impl IntoView {
@@ -18,10 +24,19 @@ pub fn Home() -> impl IntoView {
             <Show when=move || !joined.get()>
                 <JoinModal
                     on_join=move |name: String| {
-                        let user_id = uuid::Uuid::new_v4().to_string();
-                        set_user_id.set(Some(user_id));
-                        set_username.set(Some(name));
-                        set_joined.set(true);
+                        let set_user_id = set_user_id.clone();
+                        let set_username = set_username.clone();
+                        let set_joined = set_joined.clone();
+                        spawn_local(async move {
+                            match join_room(name).await {
+                                Ok(resp) => {
+                                    set_user_id.set(Some(resp.user_id));
+                                    set_username.set(Some(resp.username));
+                                    set_joined.set(true);
+                                }
+                                Err(e) => logging::log!("join failed: {:?}", e),
+                            }
+                        });
                     }
                 />
             </Show>
