@@ -1,0 +1,79 @@
+[package]
+name = "youtube-together"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "server"
+required-features = ["ssr"]
+
+[dependencies]
+leptos = { version = "0.6" }
+leptos_meta = { version = "0.6" }
+leptos_router = { version = "0.6" }
+leptos_axum = { version = "0.6", optional = true }
+
+# Server-side dependencies
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["fs"], optional = true }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"], optional = true }
+# Alternative for systems without OpenSSL development headers:
+# sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "sqlite", "chrono", "uuid"], optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false, optional = true }
+dotenv = { version = "0.15", optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", optional = true }
+
+# Client-side dependencies
+console_error_panic_hook = "0.1"
+console_log = "1"
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "EventSource",
+    "MessageEvent",
+] }
+gloo-timers = { version = "0.3", features = ["futures"] }
+
+[features]
+hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:tower",
+    "dep:tower-http",
+    "dep:leptos_axum",
+    "dep:sqlx",
+    "dep:reqwest",
+    "dep:dotenv",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+[package.metadata.leptos]
+output-name = "youtube-together"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+assets-dir = "public"
+style-file = "style/main.scss"
+tailwind-input-file = "style/tailwind.css"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false 

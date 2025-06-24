@@ -1,0 +1,21 @@
+[build]
+target = "index.html"
+dist = "target/site"
+
+[watch]
+watch = ["src", "style"]
+
+[serve]
+address = "127.0.0.1"
+port = 3001
+open = false
+
+[[hooks]]
+stage = "pre_build"
+command = "npx"
+command_arguments = [
+  "tailwindcss",
+  "-i", "./style/tailwind.css",
+  "-o", "./target/site/tailwind.css",
+  "--minify"
+] 

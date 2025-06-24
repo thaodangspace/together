@@ -1,273 +1,264 @@
-# SyncWatch - Deno + tRPC + React
+# 🎵 YouTube Together
 
-A real-time video watching application that allows users to watch YouTube videos together with friends.
+A real-time collaborative YouTube viewing application built with [Leptos.dev](https://leptos.dev) fullstack framework.
 
-## 🚀 Quick Start
+## ✨ Features
 
-### Single Port Mode (Recommended for Production)
+-   **Single Shared Room**: All users join one unified shared room
+-   **Real-time Video Synchronization**: Watch YouTube videos together with synchronized playback
+-   **Queue Management**: Add, remove, and reorder videos in the shared queue
+-   **Live Chat**: Chat with other users in real-time
+-   **User Management**: See who's online and manage the room
 
-**Run both frontend and backend on one port:**
+## 🚀 Tech Stack
 
-```bash
-# Build frontend and start server (everything on port 8000)
-./build.sh
+-   **Frontend**: Leptos.dev (Rust + WebAssembly)
+-   **Backend**: Leptos.dev with Axum server
+-   **Database**: SQLx with SQLite (development) / PostgreSQL (production)
+-   **Real-time**: Server-Sent Events (SSE)
+-   **Styling**: Tailwind CSS
+-   **Build**: Trunk for frontend, Cargo for backend
 
-# Or manually:
-deno task build && deno task server:start
-```
-
-✅ Access the complete app at **http://localhost:8000**
-
-### Development Mode (Separate Ports)
-
-**For development with hot reload:**
-
-1. **Start the server:**
-
-```bash
-deno task server:dev
-```
-
-✅ Server running: **http://localhost:8000**
-
-2. **In a separate terminal, start the frontend watcher:**
-
-```bash
-deno task dev
-```
-
-✅ Frontend files served via the server on **http://localhost:8000**
-
-## 🚀 Phase 1: Core Infrastructure
-
-Phase 1 includes the foundational infrastructure needed for the SyncWatch application:
-
-### ✅ Completed Features
-
--   **Backend Setup**: Deno.js server with Oak and tRPC
--   **Database**: Deno KV store for rooms, users, queue, and messages
--   **API Endpoints**: REST and tRPC routes for room management
--   **Long-Polling System**: Real-time communication infrastructure
--   **Frontend Setup**: React with Tailwind CSS
--   **Basic UI**: Landing page with room creation/joining forms
-
-### 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │   Database      │
-│   (React)       │◄──►│   (Deno.js)     │◄──►│   (Deno KV)     │
-│                 │    │                 │    │                 │
-│ • React UI      │    │ • Oak Server    │    │ • Rooms         │
-│ • Tailwind CSS  │    │ • REST & tRPC   │    │ • Users         │
-│ • Zustand       │    │ • Long-Polling  │    │ • Queue         │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🛠️ Getting Started
+## 🛠️ Development Setup
 
 ### Prerequisites
 
--   **Deno** 1.36+ - [Install Deno](https://deno.land/manual/getting_started/installation)
--   **Node.js** 18+ - [Install Node.js](https://nodejs.org/)
--   **Git** - [Install Git](https://git-scm.com/)
+-   Rust (latest stable)
+-   Node.js (for Tailwind CSS)
 
-### 1. Server Setup
-
-```bash
-# Copy environment variables
-cp server/env.example server/.env
-
-# Start the server
-deno task server:dev
-```
-
-The server will start on `http://localhost:8000`
-
-### 2. Frontend Setup
+**System Dependencies (Linux/Ubuntu):**
 
 ```bash
-# Install dependencies
-npm install
-
-# Start the React build watcher (new terminal)
-deno task dev
+sudo apt update
+sudo apt install build-essential libssl-dev pkg-config
 ```
 
-The frontend is served by the Deno server on `http://localhost:8000`
-
-### 3. Environment Configuration
-
-Create a `.env` file in the `server` directory:
+**System Dependencies (Fedora/RHEL):**
 
 ```bash
-PORT=8000
-KV_DATABASE_URL=
-YOUTUBE_API_KEY=your_youtube_api_key_here
-CORS_ORIGIN=http://localhost:8000
-JWT_SECRET=your_jwt_secret_here
-LOG_LEVEL=info
-NODE_ENV=development
+sudo dnf install openssl-devel pkg-config gcc
 ```
 
-## 📡 API Endpoints
-
-### Room Management
-
--   `POST /api/join` - Join the default room
--   `GET /api/rooms/:roomId` - Get room state
--   `DELETE /api/rooms/:roomId/leave` - Leave a room
-
-### Real-time Communication
-
--   `GET /api/rooms/:roomId/poll` - Long-polling endpoint for real-time updates
-
-### Health Check
-
--   `GET /api/health` - Server health status
-
-## 🗄️ Database Schema
-
-The backend uses **Deno KV** for persistent storage with the following collections:
-
-1. **rooms** – current room state
-2. **users** – connected users per room
-3. **queue** – video queue entries
-4. **messages** – chat history
-
-## 🧪 Testing Phase 1
-
-### Backend Testing
+**System Dependencies (macOS):**
 
 ```bash
-# Check server health
-curl http://localhost:8000/api/health
-
+# Usually no additional packages needed
+# If you encounter issues, install via Homebrew:
+brew install openssl pkg-config
 ```
 
-### Frontend Testing
+### Installation
 
-1. Open `http://localhost:8000` in your browser
-2. Enter your name and join the room
-3. Check browser console for form submission logs
-4. Verify the UI displays correctly on mobile and desktop
+1. **Clone the repository**
 
-## 📂 Project Structure
+    ```bash
+    git clone <repository-url>
+    cd youtube-together
+    ```
+
+2. **Install dependencies**
+
+    ```bash
+    # Install Rust tools
+    cargo install trunk
+    rustup target add wasm32-unknown-unknown
+
+    # Install Tailwind CSS (choose one method)
+    # Method 1: Using npm (recommended)
+    npm install -D tailwindcss
+
+    # Method 2: Download standalone binary (if no Node.js)
+    # Linux/macOS
+    curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64
+    chmod +x tailwindcss-linux-x64
+    mv tailwindcss-linux-x64 tailwindcss
+    ```
+
+3. **Setup environment**
+
+    ```bash
+    cp env.example .env
+    # Edit .env with your settings (YouTube API key, etc.)
+    ```
+
+4. **Run development server**
+
+    ```bash
+    # Terminal 1: Start Tailwind CSS watch
+    # If using npm:
+    npx tailwindcss -i ./style/tailwind.css -o ./target/site/tailwind.css --watch
+    # If using standalone binary:
+    # ./tailwindcss -i ./style/tailwind.css -o ./target/site/tailwind.css --watch
+
+    # Terminal 2: Start frontend development server
+    trunk serve
+
+    # Terminal 3: Start backend server
+    cargo run --bin server --features ssr
+    ```
+
+### Quick Build
+
+Use the provided build script:
+
+```bash
+chmod +x build.sh
+./build.sh
+```
+
+## 📁 Project Structure
 
 ```
-together/
-├── server/                 # Deno backend
-│   ├── database/           # Deno KV helpers
-│   ├── routes/             # REST routes
-│   ├── services/           # Business logic
-│   ├── longpoll/           # Long-polling manager
-│   ├── trpc/               # tRPC router
-│   ├── utils/              # Logger and helpers
-│   ├── env.example         # Environment variables template
-│   └── server.ts           # Main server file
-├── www/                    # React frontend
-│   ├── components/
+youtube-together/
+├── src/
+│   ├── lib.rs                   # Main app component
+│   ├── main.rs                  # Server entry point
+│   ├── components/              # UI components
+│   │   ├── join_modal.rs        # Join room modal
+│   │   ├── video_player.rs      # YouTube player
+│   │   ├── queue.rs             # Queue management
+│   │   ├── chat.rs              # Chat interface
+│   │   └── user_list.rs         # Online users
 │   ├── pages/
-│   ├── services/
-│   ├── styles/
-│   ├── main.tsx
-│   ├── App.tsx
-│   ├── build.ts
-│   └── dev.ts
-├── public/                 # Static assets
-│   └── index.html
-├── build.sh                # Build & start helper
-├── deno.json               # Deno tasks and deps
-└── README.md               # Project docs
+│   │   └── home.rs              # Main room page
+│   ├── server/                  # Server-side code
+│   │   ├── state.rs             # App state management
+│   │   ├── functions.rs         # Leptos server functions
+│   │   ├── database.rs          # Database operations
+│   │   ├── youtube.rs           # YouTube API integration
+│   │   └── events.rs            # SSE event handling
+│   └── types/
+│       └── models.rs            # Shared data types
+├── migrations/                  # Database migrations
+├── style/                       # CSS/SCSS files
+├── public/                      # Static assets
+└── docs/                        # Documentation
 ```
 
-## 🚦 Phase 1 Status
+## 🔧 Configuration
 
-### ✅ Completed Tasks
+### Environment Variables
 
--   [x] Backend project structure and configuration
--   [x] Database schema implementation
--   [x] Room service with CRUD operations
--   [x] Long-polling manager for real-time communication
--   [x] Basic API endpoints for room management
--   [x] Frontend project setup with React + Tailwind
--   [x] API service for backend communication
--   [x] Landing page with forms
--   [x] Basic error handling and logging
+Create a `.env` file based on `env.example`:
 
-### 🔄 Ready for Phase 2
+```env
+DATABASE_URL=sqlite:./database.db
+YOUTUBE_API_KEY=your_youtube_api_key_here
+RUST_LOG=info
+LEPTOS_SITE_ADDR=0.0.0.0:3000
+LEPTOS_SITE_ROOT=target/site
+```
 
--   Room creation and joining functionality
--   User management and authentication
--   Real-time user presence
--   Enhanced UI components
+### YouTube API Setup
 
-## 🐛 Known Issues & Limitations
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable YouTube Data API v3
+4. Create API credentials (API Key)
+5. Add the API key to your `.env` file
 
-### Phase 1 Limitations
+## 🚀 Deployment
 
-1. **Forms are not functional** - They log to console but don't make API calls yet
-2. **No actual room functionality** - Database and APIs are ready but not connected to frontend
-3. **No authentication** - Using simple user ID headers
-4. **Local Deno KV store** - Will need a persistent KV service for production
+### Docker Deployment
 
-### TypeScript Errors
+```dockerfile
+FROM rust:1.75 as builder
 
-Some TypeScript errors are expected in this phase as they relate to:
+RUN cargo install trunk
+RUN rustup target add wasm32-unknown-unknown
 
-    -   Deno-specific imports and APIs
-    -   Modern React features using TypeScript
-    -   These will resolve when the servers are running
+WORKDIR /app
+COPY . .
 
-## 🚀 Next Steps (Phase 2)
+RUN trunk build --release
+RUN cargo build --release --bin server --features ssr
 
-1. **Connect frontend forms to backend APIs**
-2. **Implement room creation/joining flow**
-3. **Add user session management**
-4. **Create room page layout**
-5. **Implement real-time user presence**
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates sqlite3
+
+WORKDIR /app
+COPY --from=builder /app/target/release/server ./
+COPY --from=builder /app/target/site ./target/site
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+CMD ["./server"]
+```
+
+### Manual Deployment
+
+1. Build the application:
+
+    ```bash
+    ./build.sh
+    ```
+
+2. Copy files to server:
+
+    - `target/release/server` (binary)
+    - `target/site/` (frontend assets)
+    - `public/` (static files)
+    - `migrations/` (database migrations)
+
+3. Run on server:
+    ```bash
+    ./server
+    ```
+
+## 📋 Development Phases
+
+### ✅ Phase 1: Project Setup
+
+-   [x] Leptos project initialization
+-   [x] Database schema and migrations
+-   [x] Basic project structure
+-   [x] Tailwind CSS integration
+
+### 🔄 Phase 2: Core Functionality (In Progress)
+
+-   [ ] Server functions implementation
+-   [ ] User join functionality
+-   [ ] Basic room state management
+-   [ ] Server-Sent Events setup
+
+### 📅 Phase 3: Video Player
+
+-   [ ] YouTube IFrame API integration
+-   [ ] Video control synchronization
+-   [ ] YouTube metadata fetching
+
+### 📅 Phase 4: Queue Management
+
+-   [ ] Queue CRUD operations
+-   [ ] Drag and drop functionality
+-   [ ] Auto-play next video
+
+### 📅 Phase 5: Chat System
+
+-   [ ] Real-time messaging
+-   [ ] Message history
+-   [ ] YouTube link detection
+
+### 📅 Phase 6: Polish & Deploy
+
+-   [ ] UI/UX improvements
+-   [ ] Performance optimization
+-   [ ] Production deployment
 
 ## 🤝 Contributing
 
-To contribute to Phase 1:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `cargo test`
+5. Submit a pull request
 
-1. Ensure all Phase 1 tests pass
-2. Follow the existing code structure
-3. Update documentation for any changes
-4. Test both backend and frontend thoroughly
+## 📄 License
 
-## 📝 Logs and Debugging
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Backend Logs
+## 🙏 Acknowledgments
 
-The backend logs all HTTP requests and database operations. Check the console output for:
-
--   Request methods and response times
--   Database initialization messages
--   Error messages and stack traces
-
-### Frontend Debugging
-
-Open browser developer tools to see:
-
--   Form submission logs
--   API call attempts
--   Any JavaScript errors
-
-## 🎯 Success Criteria
-
-Phase 1 is considered complete when:
-
--   [x] Backend server starts without errors
--   [x] Database tables are created correctly
--   [x] Frontend loads and displays properly
--   [x] API endpoints respond correctly
--   [x] Long-polling infrastructure is ready
--   [x] Basic error handling works
--   [x] Code is properly documented
-
----
-
-**Phase 1 Implementation Status**: ✅ COMPLETE
-
-Ready to proceed to **Phase 2: Room Management** implementation.
+-   [Leptos.dev](https://leptos.dev) for the amazing fullstack framework
+-   [YouTube](https://youtube.com) for the IFrame API
+-   [Tailwind CSS](https://tailwindcss.com) for the styling framework
