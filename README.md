@@ -103,7 +103,10 @@ Use the provided build script:
 
 ```bash
 chmod +x build.sh
-./build.sh
+# Run the full build
+sh ./build.sh
+# Or run a quick check without building assets
+sh ./build.sh check
 ```
 
 ## 📁 Project Structure

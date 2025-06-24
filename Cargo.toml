@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+# Build both dynamic and Rust libraries so that the binary
+# can import the crate while also allowing WebAssembly builds.
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "server"

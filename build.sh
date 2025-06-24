@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/bin/sh
+
+if [ "$1" = "check" ]; then
+    echo "🔍 Running cargo check..."
+    cargo check
+    exit $?
+fi
 
 echo "🔧 Installing dependencies..."
 cargo install trunk
@@ -6,29 +12,37 @@ rustup target add wasm32-unknown-unknown
 
 # Install Tailwind CSS standalone binary
 echo "📦 Installing Tailwind CSS standalone binary..."
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64
-    chmod +x tailwindcss-linux-x64
-    mv tailwindcss-linux-x64 ./tailwindcss
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-macos-x64
-    chmod +x tailwindcss-macos-x64
-    mv tailwindcss-macos-x64 ./tailwindcss
-elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-windows-x64.exe
-    mv tailwindcss-windows-x64.exe ./tailwindcss.exe
-fi
+OS=$(uname | tr '[:upper:]' '[:lower:]')
+case "$OS" in
+    linux*)
+        curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64
+        chmod +x tailwindcss-linux-x64
+        mv tailwindcss-linux-x64 ./tailwindcss
+        ;;
+    darwin*)
+        curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-macos-x64
+        chmod +x tailwindcss-macos-x64
+        mv tailwindcss-macos-x64 ./tailwindcss
+        ;;
+    *)
+        curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-windows-x64.exe
+        mv tailwindcss-windows-x64.exe ./tailwindcss.exe
+        ;;
+esac
 
 echo "🎨 Building CSS with Tailwind CSS standalone binary..."
 # Create target/site directory if it doesn't exist
 mkdir -p ./target/site
 
 # Build CSS with standalone binary
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    ./tailwindcss.exe -i ./style/tailwind.css -o ./target/site/tailwind.css --minify
-else
-    ./tailwindcss -i ./style/tailwind.css -o ./target/site/tailwind.css --minify
-fi
+case "$OS" in
+    mingw*|msys*|cygwin*|windows*)
+        ./tailwindcss.exe -i ./style/tailwind.css -o ./target/site/tailwind.css --minify
+        ;;
+    *)
+        ./tailwindcss -i ./style/tailwind.css -o ./target/site/tailwind.css --minify
+        ;;
+esac
 
 echo "🦀 Building frontend with Trunk..."
 trunk build --release
