@@ -3,6 +3,11 @@ use axum::{body::Body, http::Request, http::StatusCode, middleware::Next, respon
 /// Simple authentication middleware that expects an `X-Auth-Token` header.
 /// The header value is inserted into request extensions for handlers to use.
 pub async fn auth(mut req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
+    // Allow unauthenticated access to join_room so new users can register
+    if req.uri().path() == "/api/join_room" {
+        return Ok(next.run(req).await);
+    }
+
     let token = req
         .headers()
         .get("x-auth-token")
