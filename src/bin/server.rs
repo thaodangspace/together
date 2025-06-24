@@ -6,6 +6,7 @@ async fn main() {
     use leptos_axum::{generate_route_list, render_app_to_stream_with_context, LeptosRoutes};
     use tower_http::services::ServeDir;
     use youtube_together::server::state::AppState;
+    use youtube_together::server::auth::auth;
     use youtube_together::*;
 
     // Initialize tracing
@@ -45,7 +46,8 @@ async fn main() {
         .nest_service("/longpoll", app_state.long_poll_handler())
         .nest_service("/pkg", ServeDir::new("target/site/pkg"))
         .nest_service("/public", ServeDir::new("public"))
-        .with_state(leptos_options.clone());
+        .with_state(leptos_options.clone())
+        .layer(axum::middleware::from_fn(auth));
 
     // Start the server
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
