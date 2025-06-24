@@ -2,7 +2,7 @@ use crate::components::{Chat, JoinModal, Queue, UserList, VideoPlayer};
 #[cfg(feature = "ssr")]
 use crate::server::functions::join_room;
 #[cfg(not(feature = "ssr"))]
-use crate::server_functions::join_room;
+use crate::client_api::join_room;
 use gloo_net::http::Request;
 use gloo_timers::future::TimeoutFuture;
 use leptos::logging;
