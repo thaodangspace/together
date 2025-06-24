@@ -5,6 +5,8 @@ use leptos_router::*;
 mod components;
 mod pages;
 mod types;
+#[cfg(not(feature = "ssr"))]
+mod client_api;
 
 #[cfg(feature = "ssr")]
 pub mod server;
