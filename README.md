@@ -1,34 +1,16 @@
-# \U0001F3B5 YouTube Together (Fresh)
+# Fresh project
 
-A real-time collaborative YouTube viewing application built with
-[Fresh](https://fresh.deno.dev). This repository replaces the previous Rust
-codebase with a minimal Fresh setup.
+Your new Fresh project is ready to go. You can follow the Fresh "Getting
+Started" guide here: https://fresh.deno.dev/docs/getting-started
 
-## \u2728 Features
+### Usage
 
-- **Single Shared Room**: All users join one unified shared room
-- **Real-time Video Synchronization**
-- **Queue Management**
-- **Live Chat**
-- **User Management**
+Make sure to install Deno: https://deno.land/manual/getting_started/installation
 
-These features are currently provided as placeholders. State is kept in memory
-and events are dispatched through a simple `EventTarget`.
+Then start the project:
 
-## \ud83d\udcaa Development
-
-1. Install [Deno](https://deno.com/manual/getting_started/installation)
-2. Run the dev server:
-
-```bash
+```
 deno task start
 ```
 
-The project will start on `http://localhost:8000`.
-
-### Node Compatibility
-
-Dependency versions are managed via `deno.json` and remote imports rather
-than the traditional Node `package.json`. The `package.json` file in this
-repository exists only for compatibility with tooling and therefore does
-not list any Node dependencies.
+This will watch the project directory and restart as necessary.

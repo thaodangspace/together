@@ -1,11 +1,8 @@
 #!/usr/bin/env -S deno run -A --watch=static/,routes/
-import { Builder } from "$fresh/dev.ts";
-import { app } from "./main.ts";
 
-const builder = new Builder({ target: "es2022" });
+import dev from "$fresh/dev.ts";
+import config from "./fresh.config.ts";
 
-if (Deno.args.includes("build")) {
-  await builder.build(app);
-} else {
-  await builder.listen(app);
-}
+import "$std/dotenv/load.ts";
+
+await dev(import.meta.url, "./main.ts", config);
