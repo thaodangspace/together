@@ -25,3 +25,10 @@ deno task start
 ```
 
 The project will start on `http://localhost:8000`.
+
+### Node Compatibility
+
+Dependency versions are managed via `deno.json` and remote imports rather
+than the traditional Node `package.json`. The `package.json` file in this
+repository exists only for compatibility with tooling and therefore does
+not list any Node dependencies.
