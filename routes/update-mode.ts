@@ -1,5 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { getKv } from "../lib/kv.ts";
+import { notifyUpdate } from "../lib/updateNotifier.ts";
 
 export const handler: Handlers = {
   async POST(req) {
@@ -19,6 +20,7 @@ export const handler: Handlers = {
       lastUpdated: new Date().toISOString(),
     };
     await kv.set(["room:state"], newState);
+    notifyUpdate();
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "Content-Type": "application/json" },
     });
