@@ -16,6 +16,7 @@ interface RoomState {
 export default function Room() {
   const [state, setState] = useState<RoomState | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [counter, setCounter] = useState(0);
   const [videoId, setVideoId] = useState("");
   const userId = typeof window !== "undefined"
     ? localStorage.getItem("userId")
@@ -23,10 +24,11 @@ export default function Room() {
 
   const fetchState = async () => {
     try {
-      const resp = await fetch("/current-state");
+      const resp = await fetch(`/current-state?since=${counter}`);
       const data = await resp.json();
       setState(data.state);
       setQueue(data.queue || []);
+      setCounter(data.counter || 0);
     } catch (_e) {
       // ignore network errors
     }
@@ -37,7 +39,7 @@ export default function Room() {
     const poll = async () => {
       while (running) {
         await fetchState();
-        await new Promise((r) => setTimeout(r, 3000));
+        await new Promise((r) => setTimeout(r, 1000));
       }
     };
     poll();
