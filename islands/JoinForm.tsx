@@ -27,16 +27,16 @@ export default function JoinForm() {
   };
 
   return (
-    <form onSubmit={join} class="flex gap-4">
+    <form onSubmit={join} class="flex gap-2 w-full">
       <input
-        class="border-2 px-2 py-1"
+        class="flex-grow border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         type="text"
         placeholder="Your name"
         value={name}
         onInput={(e) => setName((e.target as HTMLInputElement).value)}
       />
       <Button type="submit">Join</Button>
-      {error && <p class="text-red-600">{error}</p>}
+      {error && <p class="text-red-600 text-sm ml-2 self-center">{error}</p>}
     </form>
   );
 }

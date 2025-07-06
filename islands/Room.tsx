@@ -65,10 +65,10 @@ export default function Room() {
   };
 
   return (
-    <div class="space-y-4">
+    <div class="space-y-6">
       <form onSubmit={submit} class="flex gap-2">
         <input
-          class="border-2 px-2 py-1 flex-grow"
+          class="flex-grow border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={videoId}
           onInput={(e) => setVideoId((e.target as HTMLInputElement).value)}
           placeholder="YouTube video ID"
@@ -88,10 +88,15 @@ export default function Room() {
       )}
 
       <div>
-        <h2 class="font-bold">Queue</h2>
-        <ul>
+        <h2 class="font-bold mb-2">Queue</h2>
+        <ul class="space-y-1">
           {queue.map((item) => (
-            <li key={item.videoId}>{item.title || item.videoId}</li>
+            <li
+              key={item.videoId}
+              class="p-2 bg-gray-100 rounded"
+            >
+              {item.title || item.videoId}
+            </li>
           ))}
         </ul>
       </div>
