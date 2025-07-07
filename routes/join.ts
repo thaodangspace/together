@@ -10,12 +10,14 @@ export const handler: Handlers = {
         headers: { "Content-Type": "application/json" },
       });
     }
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
     const id = crypto.randomUUID();
     const kv = await getKv();
     await kv.set(["users", id], {
       id,
       name,
       joinedAt: new Date().toISOString(),
+      ip,
     });
     return new Response(JSON.stringify({ id }), {
       headers: { "Content-Type": "application/json" },

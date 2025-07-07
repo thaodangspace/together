@@ -1,9 +1,31 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { Button } from "../components/Button.tsx";
 
 export default function JoinForm() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const id = localStorage.getItem("userId");
+    if (!id) {
+      setChecked(true);
+      return;
+    }
+    fetch(`/api/validate-user?id=${id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.valid) {
+          location.href = "/room";
+        } else {
+          localStorage.removeItem("userId");
+          setChecked(true);
+        }
+      })
+      .catch(() => {
+        setChecked(true);
+      });
+  }, []);
 
   const join = async (e: Event) => {
     e.preventDefault();
@@ -25,6 +47,10 @@ export default function JoinForm() {
       setError("Failed to join");
     }
   };
+
+  if (!checked) {
+    return <div />;
+  }
 
   return (
     <form onSubmit={join} class="flex gap-2 w-full">

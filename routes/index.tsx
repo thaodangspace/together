@@ -1,4 +1,26 @@
 import JoinForm from "../islands/JoinForm.tsx";
+import { Handlers } from "$fresh/server.ts";
+import { getKv } from "../lib/kv.ts";
+
+export const handler: Handlers = {
+  async GET(req, ctx) {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (ip) {
+      const kv = await getKv();
+      for await (
+        const entry of kv.list<{ ip?: string }>({ prefix: ["users"] })
+      ) {
+        if (entry.value.ip === ip) {
+          return new Response(null, {
+            status: 307,
+            headers: { location: "/room" },
+          });
+        }
+      }
+    }
+    return ctx.render();
+  },
+};
 
 export default function Home() {
   return (
