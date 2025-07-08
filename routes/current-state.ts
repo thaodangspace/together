@@ -18,8 +18,12 @@ export const handler: Handlers = {
     for await (const entry of kv.list({ prefix: ["queue"] })) {
       queue.push(entry.value);
     }
+    const messages: unknown[] = [];
+    for await (const entry of kv.list({ prefix: ["chat"] })) {
+      messages.push(entry.value);
+    }
     return new Response(
-      JSON.stringify({ state, queue, counter: getCounter() }),
+      JSON.stringify({ state, queue, messages, counter: getCounter() }),
       { headers: { "Content-Type": "application/json" } },
     );
   },
