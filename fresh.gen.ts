@@ -5,6 +5,7 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $api_joke from "./routes/api/joke.ts";
+import * as $api_validate_user from "./routes/api/validate-user.ts";
 import * as $current_state from "./routes/current-state.ts";
 import * as $join from "./routes/join.ts";
 import * as $request_video from "./routes/request-video.ts";
@@ -22,6 +23,7 @@ const manifest = {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
     "./routes/api/joke.ts": $api_joke,
+    "./routes/api/validate-user.ts": $api_validate_user,
     "./routes/current-state.ts": $current_state,
     "./routes/join.ts": $join,
     "./routes/request-video.ts": $request_video,
