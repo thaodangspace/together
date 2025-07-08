@@ -25,7 +25,6 @@ export default function Room() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [counter, setCounter] = useState(0);
-  const [videoId, setVideoId] = useState("");
   const [chatText, setChatText] = useState("");
   const userId = typeof window !== "undefined"
     ? localStorage.getItem("userId")
@@ -58,22 +57,6 @@ export default function Room() {
     };
   }, []);
 
-  const submit = async (e: Event) => {
-    e.preventDefault();
-    if (!videoId) return;
-    try {
-      await fetch("/request-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId, userId }),
-      });
-      setVideoId("");
-      fetchState();
-    } catch (_e) {
-      // ignore network errors
-    }
-  };
-
   const sendChat = async (e: Event) => {
     e.preventDefault();
     if (!chatText) return;
@@ -91,17 +74,11 @@ export default function Room() {
   };
 
   return (
-    <div class="flex gap-4 h-screen p-4 box-border">
+    <div class="flex flex-col sm:flex-row gap-4 h-screen p-4 box-border">
       <div class="flex flex-col flex-1">
-        <form onSubmit={submit} class="flex gap-2 mb-4">
-          <input
-            class="flex-grow border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={videoId}
-            onInput={(e) => setVideoId((e.target as HTMLInputElement).value)}
-            placeholder="YouTube video ID"
-          />
-          <Button type="submit">Request</Button>
-        </form>
+        <p class="mb-4 text-sm text-gray-600">
+          Use <code>/add &lt;YouTube URL&gt;</code> in chat to request a video.
+        </p>
         <div class="flex-1 flex items-center justify-center">
           {state?.currentVideoId && (
             <iframe
@@ -123,7 +100,7 @@ export default function Room() {
           </ul>
         </div>
       </div>
-      <div class="w-64 border-l pl-4 flex flex-col">
+      <div class="w-full sm:w-64 border-t sm:border-t-0 sm:border-l pt-4 sm:pt-0 sm:pl-4 flex flex-col">
         <h2 class="font-bold mb-2">Chat</h2>
         <div class="flex-1 overflow-y-auto mb-2 space-y-1">
           {messages.map((m) => (
