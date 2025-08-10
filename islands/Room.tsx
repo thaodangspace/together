@@ -74,19 +74,20 @@ export default function Room() {
   };
 
   return (
-    <div class="flex flex-col sm:flex-row gap-4 h-screen p-4 box-border">
+    <div class="flex flex-col sm:flex-row gap-4 min-h-screen p-4 box-border">
       <div class="flex flex-col flex-1">
         <p class="mb-4 text-sm text-gray-600">
           Use <code>/add &lt;YouTube URL&gt;</code> in chat to request a video.
         </p>
         <div class="flex-1 flex items-center justify-center">
           {state?.currentVideoId && (
-            <iframe
-              width="560"
-              height="315"
-              src={`https://www.youtube.com/embed/${state.currentVideoId}?autoplay=1`}
-              allow="autoplay"
-            />
+            <div class="w-full aspect-video">
+              <iframe
+                class="w-full h-full"
+                src={`https://www.youtube.com/embed/${state.currentVideoId}?autoplay=1`}
+                allow="autoplay"
+              />
+            </div>
           )}
         </div>
         <div class="mt-4">
